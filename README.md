@@ -4,7 +4,7 @@
 
 > 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As funcionalidades financeiras estão sendo modeladas e ainda não foram implementadas. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
-**Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
+**Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
 ---
 
@@ -42,22 +42,28 @@ Uma API que funciona como a **conta corrente do proprietário dentro da administ
 | **Tarifa** | A taxa de administração, retida no momento do repasse. |
 | **Extrato** | Paginado e discriminado por natureza, porque a lei manda. |
 
-## Como funciona
+## As três regras que o sistema barra
 
-O caminho de cada pagamento:
+| # | O sistema recusa… | Base |
+|---|---|---|
+| 1 | **Repasse acima do saldo disponível** do proprietário. | Regra de negócio |
+| 2 | **Baixa de pagamento sem política de imputação declarada.** O Código Civil manda imputar primeiro nos juros e depois no capital. O resto da ordem é política do time, e é ela que o time defende. | Código Civil, arts. 354 e 355 |
+| 3 | **Lançamento genérico no extrato.** Todo crédito e todo débito carrega uma natureza, ou a operação é recusada. | Lei 8.245/1991, art. 22, VI |
+
+## Um mês na conta do proprietário
 
 ```
-pagamento → identificação → imputação → atualização do saldo → taxa → repasse → extrato
+boleto pago pelo inquilino (aluguel + condomínio + IPTU)
+        ↓  entra como lançamentos, cada um com sua natureza
+conta do proprietário
+        ↓  condomínio sai para o síndico, no vencimento
+        ↓  IPTU sai para a prefeitura, no vencimento
+        ↓  no repasse, a taxa de administração é retida
+        ↓  o resto vai para o proprietário (lá pelo dia 10), nunca acima do saldo disponível
+extrato discriminado: a prestação de contas do mês
 ```
 
-| Etapa | O que acontece |
-|---|---|
-| **Identificação** | A natureza de cada lançamento é identificada. |
-| **Imputação** | As regras definem a que cada parte do pagamento se destina: aluguel, condomínio, IPTU, multas, juros… |
-| **Atualização do saldo** | O crédito ou débito é registrado na conta do proprietário, separando o saldo disponível do provisionado. |
-| **Taxa** | A taxa da administradora é calculada e registrada. |
-| **Repasse** | O dinheiro vai para o proprietário, e nunca acima do saldo disponível. |
-| **Extrato** | Tudo aparece num extrato financeiro discriminado e paginado. |
+Se o valor pago for diferente do boleto, a **política de imputação** declarada decide como ele se divide, e não uma planilha.
 
 ## Funcionalidades
 
