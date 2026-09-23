@@ -36,7 +36,7 @@
 
 ---
 
-> **Uma API que é a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
+> **A ORCA é uma API que funciona como a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
 
 > 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
