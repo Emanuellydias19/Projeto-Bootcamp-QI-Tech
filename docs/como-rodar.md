@@ -9,7 +9,7 @@ A API e o banco sobem no **Docker**. Os testes rodam no **Python** da sua máqui
 ## Pré-requisitos
 
 | Programa | Para quê | Como conferir |
-|---|---|---|
+| --- | --- | --- |
 | **Docker Desktop** | roda a API e o banco | `docker compose version` |
 | **Git** (no Windows, traz o **Git Bash**) | clonar o repositório e rodar os comandos | `git --version` |
 | **Python 3.12** | rodar os testes | `py -3.12 --version` (Mac/Linux: `python3.12 --version`) |
@@ -44,7 +44,7 @@ Com o Docker Desktop aberto:
 docker compose up --build
 ```
 
-Espere aparecer `Application startup complete` e abra http://localhost:3000. Deve aparecer algo como `{"service":"bootcamp-api","id":"8"}`.
+Espere aparecer `Application startup complete` e abra <http://localhost:3000>. Deve aparecer algo como `{"service":"bootcamp-api","id":"8"}`.
 
 Esse terminal fica ocupado com a API. Para o resto, abra outro.
 
@@ -73,7 +73,7 @@ O resultado esperado é `35 passed`. Para rodar um arquivo só: `pytest -v tests
 ## 5. Desligar e resetar
 
 | Quero… | Comando |
-|---|---|
+| --- | --- |
 | Desligar | `Ctrl+C` no terminal da API e depois `docker compose down` |
 | Ligar de novo | `docker compose up` |
 | Recriar o banco do zero (necessário depois de mudar `database/database.sql`) | `docker compose down -v` e depois `docker compose up` |
@@ -82,7 +82,7 @@ O resultado esperado é `35 passed`. Para rodar um arquivo só: `pytest -v tests
 ## Problemas comuns
 
 | A mensagem diz… | O que fazer |
-|---|---|
+| --- | --- |
 | `failed to connect to the docker API` | Abra o Docker Desktop e espere ele ficar pronto. |
 | `port is already allocated` | No `.env`, descomente `API_PORT=3001` e/ou `DB_PORT=5433`. Se mudou o `DB_PORT`, troque a porta também na `DATABASE_URL`. |
 | `Não consegui falar com a API em http://0.0.0.0:3000` | Faltou a troca `SERVER_LOCALHOST=localhost` no `.env` (passo 2). |

@@ -5,7 +5,7 @@ Este guia é o combinado do time: como criar branches, escrever commits e abrir 
 ## As branches
 
 | Branch | Para que serve | Quem escreve nela |
-|---|---|---|
+| --- | --- | --- |
 | `main` | Versão estável, a que é entregue. | Ninguém escreve direto. Só recebe merge de `develop`, quando o time decide que está pronto. |
 | `develop` | Onde o trabalho de todo mundo se junta. É a base de toda branch nova. | Ninguém escreve direto. Só recebe pull requests. |
 | `tipo/descricao-curta` | O seu trabalho do momento. | Você. |
@@ -13,7 +13,7 @@ Este guia é o combinado do time: como criar branches, escrever commits e abrir 
 O nome da sua branch começa pelo tipo de trabalho:
 
 | Prefixo | Quando usar | Exemplo |
-|---|---|---|
+| --- | --- | --- |
 | `feat/` | funcionalidade nova | `feat/cadastro-de-proprietario` |
 | `fix/` | correção de bug | `fix/rateio-arredondamento` |
 | `docs/` | só documentação | `docs/modelagem-do-dominio` |
@@ -67,7 +67,7 @@ git push -u origin feat/nome-da-tarefa
 
 O formato é `tipo: o que mudou`, no presente e em português. Os tipos são os mesmos dos prefixos de branch:
 
-```
+```text
 feat: adiciona rota de cadastro de proprietario
 fix: corrige arredondamento do rateio em centavos
 docs: explica a maquina de estados do pagamento

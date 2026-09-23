@@ -25,7 +25,7 @@
 <div align="center">
 
 | Instrutor | Função |
-|---|---|
+| --- | --- |
 | Gilberto Oliveira | Tech Lead · DTVM |
 | Gabriel Orsi | Tech Lead · Financeiro Tech |
 | João Bebber | Tech Lead · LaaS |
@@ -37,7 +37,7 @@
 ---
 
 > **A ORCA é uma API que funciona como a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
-
+>
 > **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
@@ -71,7 +71,7 @@ Uma API que funciona como a **conta corrente do proprietário dentro da administ
 ## As cinco peças
 
 | Peça | O que é |
-|---|---|
+| --- | --- |
 | **Cliente** | O proprietário, com CPF/CNPJ validado. |
 | **Conta** | Uma por proprietário, com o **saldo disponível** separado do **provisionado**. |
 | **Transação** | O aluguel entra; condomínio, IPTU e repasse saem. Nenhuma fura o saldo. |
@@ -81,14 +81,14 @@ Uma API que funciona como a **conta corrente do proprietário dentro da administ
 ## As três regras que o sistema barra
 
 | # | O sistema recusa… | Base |
-|---|---|---|
+| --- | --- | --- |
 | 1 | **Repasse acima do saldo disponível** do proprietário. | Regra de negócio |
 | 2 | **Baixa de pagamento sem política de imputação declarada.** O Código Civil manda imputar primeiro nos juros e depois no capital. O resto da ordem é política do time, e é ela que o time defende. | Código Civil, arts. 354 e 355 |
 | 3 | **Lançamento genérico no extrato.** Todo crédito e todo débito carrega uma natureza, ou a operação é recusada. | Lei 8.245/1991, art. 22, VI |
 
 ## Um mês na conta do proprietário
 
-```
+```text
 boleto pago pelo inquilino (aluguel + condomínio + IPTU)
         ↓  entra como lançamentos, cada um com sua natureza
 conta do proprietário
@@ -113,7 +113,7 @@ Antes da primeira linha de código, o time decide quatro pontos e os registra na
 ## Status
 
 | Item | Status |
-|---|---|
+| --- | --- |
 | Cliente (proprietário com CPF/CNPJ validado) | Planejado |
 | Conta (saldo disponível × provisionado) | Planejado |
 | Transação (créditos e débitos com natureza) | Planejado |
@@ -128,7 +128,7 @@ Antes da primeira linha de código, o time decide quatro pontos e os registra na
 ## Tecnologias
 
 | Camada | Ferramenta | Versão |
-|---|---|---|
+| --- | --- | --- |
 | Linguagem | Python | 3.11 (na imagem Docker) |
 | API | FastAPI + Uvicorn | 0.141.1 / 0.52.3 |
 | Validação da entrada | jsonschema | 4.17.3 |
@@ -149,14 +149,14 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Abra http://localhost:3000: se aparecer `{"service":"bootcamp-api",...}`, está funcionando.
+Abra <http://localhost:3000>: se aparecer `{"service":"bootcamp-api",...}`, está funcionando.
 
 O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, com os testes, as particularidades do Windows e as soluções para os erros mais comuns.
 
 ## Documentação
 
 | Documento | O que tem |
-|---|---|
+| --- | --- |
 | [docs/como-rodar.md](docs/como-rodar.md) | Instalação, execução, testes e problemas comuns. |
 | [docs/rfc/0001-modelagem-da-conta-do-proprietario.md](docs/rfc/0001-modelagem-da-conta-do-proprietario.md) | As decisões de modelagem do time: onde o saldo mora, centavos e arredondamento, tarifa e chave pública. |
 | [docs/como-o-projeto-e-organizado.md](docs/como-o-projeto-e-organizado.md) | A arquitetura: o caminho de uma requisição, o que cada pasta pode e não pode fazer e onde mexer para cada tipo de mudança. |
@@ -165,7 +165,7 @@ O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, 
 
 ## Estrutura
 
-```
+```text
 src/
   app.py          ← registra as rotas, os middlewares e o tratamento de erro
   resources/      ← recebe a requisição HTTP e devolve a resposta

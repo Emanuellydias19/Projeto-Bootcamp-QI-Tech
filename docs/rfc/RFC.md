@@ -43,7 +43,7 @@ Listar somente o que será implementado nesta entrega.
 
 ---
 
-# 2. Entendimento do domínio
+## 2. Entendimento do domínio
 
 Antes de definir as rotas, precisamos definir os conceitos que existem no sistema.
 
@@ -85,7 +85,7 @@ Perguntas a decidir:
 
 ---
 
-# 3. Regras de negócio
+## 3. Regras de negócio
 
 > **Objetivo:** definir o que o sistema permite, o que bloqueia e por quê.
 
@@ -133,7 +133,7 @@ Precisamos decidir:
 * A tarifa faz parte do valor transferido ou é cobrada separadamente?
 * O que acontece se alguma etapa da transferência falhar?
 
-### Decisão
+### Decisão das regras de transferência
 
 > ...
 
@@ -151,13 +151,13 @@ Precisamos decidir:
 * A tarifa possui uma transação própria?
 * O valor da tarifa pode deixar a conta negativa?
 
-### Decisão
+### Decisão das regras de tarifa
 
 > ...
 
 ---
 
-# 4. Dinheiro e valores monetários
+## 4. Dinheiro e valores monetários
 
 Definir como valores financeiros serão representados.
 
@@ -169,7 +169,7 @@ Decidir entre:
 * [ ] `NUMERIC/DECIMAL`
 * [ ] Outro
 
-### Decisão
+### Decisão da unidade de medida
 
 > ...
 
@@ -192,7 +192,7 @@ Definir:
 
 ---
 
-# 5. Integridade e histórico
+## 5. Integridade e histórico
 
 Definir o que acontece com os dados depois que uma operação ocorre.
 
@@ -206,7 +206,7 @@ Precisamos decidir:
 * O histórico precisa permanecer íntegro?
 * O saldo pode ser reconstruído a partir das transações?
 
-### Decisão
+### Decisão sobre as Transações
 
 > ...
 
@@ -225,7 +225,7 @@ Definir:
 
 ---
 
-# 6. Segurança e acesso aos recursos
+## 6. Segurança e acesso aos recursos
 
 Definir como a API diferencia recursos pertencentes ao solicitante e recursos de terceiros.
 
@@ -239,13 +239,13 @@ Precisamos decidir:
 * Como identificamos o proprietário do recurso?
 * O que acontece quando alguém tenta acessar um recurso que não lhe pertence?
 
-### Decisão
-
+### Decisão sobre o acesso
+>
 > ...
 
 ---
 
-# 7. Contrato da API
+## 7. Contrato da API
 
 Somente depois das decisões anteriores devemos fechar as rotas.
 
@@ -295,7 +295,7 @@ Antes de implementar cada endpoint, responder:
 
 ---
 
-# 8. Fluxos
+## 8. Fluxos
 
 Depois de fechar as rotas, devemos desenhar os fluxos das principais operações.
 
@@ -325,7 +325,7 @@ Resposta
 ...
 ```
 
-### Decisões
+### Decisões sobre o fluxo de conta
 
 > ...
 
@@ -337,7 +337,7 @@ Resposta
 ...
 ```
 
-### Decisões
+### Decisões sobre o fluxo de transação
 
 > ...
 
@@ -365,7 +365,7 @@ Confirmar operação
 Resposta
 ```
 
-### Decisões
+### Decisões sobre o fluxo de transferência
 
 > ...
 
@@ -377,13 +377,13 @@ Resposta
 ...
 ```
 
-### Decisões
+### Decisões sobre o extrato
 
 > ...
 
 ---
 
-# 9. Tratamento de falhas
+## 9. Tratamento de falhas
 
 Para cada operação principal, precisamos definir pelo menos um caminho de falha.
 
@@ -397,7 +397,7 @@ Para cada operação principal, precisamos definir pelo menos um caminho de falh
 
 ---
 
-# 10. Validações
+## 10. Validações
 
 Separar explicitamente **validação de formato** de **regra de negócio**.
 
@@ -437,7 +437,7 @@ Exemplos:
 
 ---
 
-# 11. Decisões de arquitetura
+## 11. Decisões de arquitetura
 
 Registrar decisões que afetarão a implementação.
 
@@ -467,11 +467,11 @@ Repository
 Database
 ```
 
-### Decisão
+### Decisão a respeito das camadas
 
 > ...
 
-### Justificativa
+### Justificativa das camadas ultilizadas
 
 > ...
 
@@ -489,7 +489,7 @@ Database
 
 ---
 
-# 12. Modelo de dados
+## 12. Modelo de dados
 
 Somente após fechar o domínio e as regras, definir as estruturas persistidas.
 
@@ -531,7 +531,7 @@ Transferência
 
 ---
 
-# 13. Decisões em aberto
+## 13. Decisões em aberto
 
 Tudo que ainda não foi decidido deve ficar explícito.
 
@@ -545,7 +545,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 
 ---
 
-# 14. Decisões tomadas
+## 14. Decisões tomadas
 
 Registrar decisões importantes para evitar que sejam revistas acidentalmente.
 
@@ -557,7 +557,7 @@ Registrar decisões importantes para evitar que sejam revistas acidentalmente.
 
 ---
 
-# 15. Checklist pré-código
+## 15. Checklist pré-código
 
 Antes de começar a implementação:
 
@@ -608,22 +608,16 @@ Antes de começar a implementação:
 
 ---
 
-# 16. Critério para começar a implementação
+## 16. Critério para começar a implementação
 
 A implementação começa quando conseguimos responder, para cada operação:
 
 > **O que entra?**
-
 > **O que acontece?**
-
 > **O que pode impedir a operação?**
-
 > **O que muda no sistema?**
-
 > **O que fica registrado?**
-
 > **O que sai?**
-
 > **Como o erro é comunicado?**
 
 Se alguma dessas respostas ainda estiver indefinida, a decisão deve ser registrada em **Decisões em aberto** antes da implementação.
