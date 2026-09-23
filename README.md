@@ -1,12 +1,10 @@
 # Projeto-Bootcamp-QI-Tech
 
-> **Uma infraestrutura financeira que transforma o dinheiro administrado para cada proprietário em uma posição financeira individual, rastreável e governada por regras.**
-
-Uma API de gestão financeira para administradoras de imóveis, que funciona como uma **conta corrente interna de cada proprietário**.
+> **Uma API que é a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
 
 > 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As funcionalidades financeiras estão sendo modeladas e ainda não foram implementadas. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
-**Sumário:** [A dor](#a-dor) · [A solução](#a-solução) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
+**Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
 ---
 
@@ -26,11 +24,23 @@ O problema aparece quando entra um valor **diferente do boleto**: pagamento parc
 
 Essa decisão muda quanto o proprietário recebe, e a lei ainda proíbe quitação genérica: a **Lei 8.245/1991 (Lei do Inquilinato), art. 22, VI** exige recibo discriminado. Hoje, tudo isso vive numa planilha ao lado do ERP.
 
-## A solução
+## A ideia
 
-Uma API que dá a cada proprietário uma **conta individual**, onde cada crédito e cada débito fica registrado. Em vez de decidir manualmente *"para onde foi esse dinheiro?"*, a administradora trabalha com **regras definidas previamente**.
+Uma API que funciona como a **conta corrente do proprietário dentro da administradora**:
 
-Assim, cada real movimentado fica vinculado a uma **origem**, uma **natureza** e um **destino**. Isso reduz a dependência de planilhas e de decisões manuais.
+- todo dinheiro que entra vira **lançamento**;
+- toda saída passa por **regra**;
+- o **extrato** é a prestação de contas. Ele não é um relatório: é uma obrigação.
+
+## As cinco peças
+
+| Peça | O que é |
+|---|---|
+| **Cliente** | O proprietário, com CPF/CNPJ validado. |
+| **Conta** | Uma por proprietário, com o **saldo disponível** separado do **provisionado**. |
+| **Transação** | O aluguel entra; condomínio, IPTU e repasse saem. Nenhuma fura o saldo. |
+| **Tarifa** | A taxa de administração, retida no momento do repasse. |
+| **Extrato** | Paginado e discriminado por natureza, porque a lei manda. |
 
 ## Como funciona
 
