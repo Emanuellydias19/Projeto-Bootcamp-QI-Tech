@@ -135,7 +135,7 @@ Antes da primeira linha de código, o time decide quatro pontos e os registra na
 | Banco de dados | PostgreSQL | 16 |
 | Acesso ao banco | SQLAlchemy + psycopg2 | 2.0.23 / 2.9.10 |
 | Chamadas a outros serviços | requests | 2.32.3 |
-| Ambiente | Docker + Docker Compose | — |
+| Ambiente | Docker + Docker Compose | Compose Specification |
 | Testes | pytest | 7.4.4 |
 
 ## Começando
