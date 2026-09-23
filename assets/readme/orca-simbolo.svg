@@ -1,16 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <!-- moeda -->
-  <circle cx="100" cy="100" r="98" fill="#FFFFFF"/>
-  <circle cx="100" cy="100" r="86" fill="none" stroke="#37BEE6" stroke-width="5"/>
-  <!-- orca subindo -->
-  <g transform="translate(100,104) rotate(-14) scale(0.82) translate(-98,-60)">
-    <path fill="#0B1B3F" d="M194,70 C194,58 184,48 166,45 C150,42 134,42 118,44 C96,47 72,54 50,60 C40,63 30,64 20,64 C30,66 40,68 52,71 C80,79 120,88 158,86 C182,85 194,80 194,70 Z"/>
-    <path fill="#0B1B3F" d="M102,47 C104,31 101,17 94,4 C108,14 124,30 130,45 Z"/>
-    <path fill="#0B1B3F" d="M26,64 C18,59 10,56 0,56 C7,60 11,63 13,64.5 C11,66 7,69 0,73 C10,73 18,70 26,66 Z"/>
-    <path fill="#0B1B3F" d="M146,84 C142,94 134,101 124,104 C136,104 150,98 158,86 Z"/>
-    <ellipse fill="#FFFFFF" cx="162" cy="57" rx="11" ry="4.6" transform="rotate(-12 162 57)"/>
-    <path fill="#FFFFFF" d="M193,73 C189,80 176,84 158,84 C140,84 124,82 108,78 C126,78 148,78 164,76 C178,75 188,74 193,73 Z"/>
-    <path fill="#FFFFFF" d="M104,78 C94,76 82,72 72,66 C84,67 96,70 106,74 Z"/>
-    <path fill="#37BEE6" d="M96,50 C106,47 120,46 132,47 C126,52 110,54 96,50 Z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- barriga (branca) -->
+  <path fill="none" stroke="#FFFFFF" stroke-width="17" d="M95.74,79.58 A37,37 0 0 1 24.26,79.58"/>
+  <!-- costas (pretas) -->
+  <path fill="none" stroke="#0B1B3F" stroke-width="17" d="M24.26,79.58 A37,37 0 1 1 95.74,79.58"/>
+  <!-- nadadeira dorsal -->
+  <path fill="#0B1B3F" d="M44,38 C42,26 38,12 30,0 C50,8 66,22 74,36 Z"/>
+  <!-- mancha do olho -->
+  <ellipse fill="#FFFFFF" cx="87" cy="47" rx="9.5" ry="4.2" transform="rotate(48 87 47)"/>
 </svg>
