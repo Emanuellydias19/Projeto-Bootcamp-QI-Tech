@@ -18,6 +18,22 @@
   <a href="https://www.linkedin.com/in/maya-giron-almeida"><img src="assets/readme/maya.png" alt="Maya Giron" title="Maya Giron no LinkedIn" width="200"></a>
 </p>
 
+<p align="center">
+  <img src="assets/readme/instrutores.png" alt="Instrutores" width="100%">
+</p>
+
+<div align="center">
+
+| Instrutor | Função |
+|---|---|
+| Gilberto Oliveira | Tech Lead · DTVM |
+| Gabriel Orsi | Tech Lead · Financeiro Tech |
+| João Bebber | Tech Lead · LaaS |
+| Pedro Calil | Head · DTVM |
+| Gustavo Guanabara | Professor |
+
+</div>
+
 ---
 
 > **Uma API que é a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
