@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | 🟡 Em discussão |
+| **Status** | Em discussão |
 | **Autoras** | _o time_ |
 | **Criada em** | 22/09/2026 |
 
