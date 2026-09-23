@@ -1,4 +1,24 @@
-# Projeto-Bootcamp-QI-Tech
+<p align="center">
+  <img src="assets/readme/titulo.png" alt="Projeto Bootcamp QI Tech: a conta corrente do proprietário dentro da administradora" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/readme/logos.png" alt="Bootcamp | QI Tech" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/readme/integrantes.png" alt="Integrantes" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://www.linkedin.com/in/emanuelly-dias-2a0480305/"><img src="assets/readme/emanuelly.png" alt="Emanuelly Dias" title="Emanuelly Dias no LinkedIn" width="200"></a>
+  &nbsp;&nbsp;
+  <a href="https://www.linkedin.com/in/julia-g-perri/"><img src="assets/readme/julia.png" alt="Julia Perri" title="Julia Perri no LinkedIn" width="200"></a>
+  &nbsp;&nbsp;
+  <a href="https://www.linkedin.com/in/maya-giron-almeida"><img src="assets/readme/maya.png" alt="Maya Giron" title="Maya Giron no LinkedIn" width="200"></a>
+</p>
+
+---
 
 > **Uma API que é a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
 
