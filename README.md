@@ -38,7 +38,7 @@
 
 > **A ORCA é uma API que funciona como a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
 
-> 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
@@ -114,16 +114,16 @@ Antes da primeira linha de código, o time decide quatro pontos e os registra na
 
 | Item | Status |
 |---|---|
-| Cliente (proprietário com CPF/CNPJ validado) | 📝 planejado |
-| Conta (saldo disponível × provisionado) | 📝 planejado |
-| Transação (créditos e débitos com natureza) | 📝 planejado |
-| Tarifa (taxa de administração no repasse) | 📝 planejado |
-| Extrato (paginado e discriminado) | 📝 planejado |
-| Regra 1: sem repasse acima do saldo disponível | 📝 planejado |
-| Regra 2: sem baixa sem política de imputação | 📝 planejado |
-| Regra 3: sem lançamento genérico | 📝 planejado |
-| RFC 0001: as quatro decisões de modelagem | 🟡 em discussão |
-| Base técnica (API, banco, Docker, testes, token, erros padronizados) | ✅ pronta |
+| Cliente (proprietário com CPF/CNPJ validado) | Planejado |
+| Conta (saldo disponível × provisionado) | Planejado |
+| Transação (créditos e débitos com natureza) | Planejado |
+| Tarifa (taxa de administração no repasse) | Planejado |
+| Extrato (paginado e discriminado) | Planejado |
+| Regra 1: sem repasse acima do saldo disponível | Planejado |
+| Regra 2: sem baixa sem política de imputação | Planejado |
+| Regra 3: sem lançamento genérico | Planejado |
+| RFC 0001: as quatro decisões de modelagem | Em discussão |
+| Base técnica (API, banco, Docker, testes, token, erros padronizados) | Pronta |
 
 ## Tecnologias
 
