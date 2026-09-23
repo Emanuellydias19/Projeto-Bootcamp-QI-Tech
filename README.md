@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/readme/titulo.png" alt="Projeto Bootcamp QI Tech: a conta corrente do proprietário dentro da administradora" width="100%">
+  <img src="assets/readme/titulo.png" alt="ORCA: a conta corrente do proprietário dentro da administradora" width="100%">
 </p>
 
 <p align="center">
