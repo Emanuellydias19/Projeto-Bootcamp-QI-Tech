@@ -1,45 +1,73 @@
 # Projeto-Bootcamp-QI-Tech
 
-Uma API financeira para administradoras de imóveis que automatiza o rateio e a gestão do dinheiro de cada proprietário. Cada pagamento é identificado, classificado e distribuído por regras, mantendo saldo, taxas, repasses e extratos rastreáveis.
+> **Uma infraestrutura financeira que transforma o dinheiro administrado para cada proprietário em uma posição financeira individual, rastreável e governada por regras.**
 
-> 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As funcionalidades de rateio estão sendo modeladas e ainda não foram implementadas. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+Uma API de gestão financeira para administradoras de imóveis, que funciona como uma **conta corrente interna de cada proprietário**.
 
-**Sumário:** [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
+> 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As funcionalidades financeiras estão sendo modeladas e ainda não foram implementadas. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+
+**Sumário:** [A dor](#a-dor) · [A solução](#a-solução) · [Como funciona](#como-funciona) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
 ---
 
+## A dor
+
+Administradoras de imóveis movimentam dinheiro que **pertence aos proprietários**. Elas precisam dividir corretamente cada pagamento entre aluguel, condomínio, IPTU, multas, juros, taxas e repasses.
+
+### O problema
+
+Quando o pagamento vem diferente do previsto, o rateio deixa de ser automático e a decisão passa para **planilhas e processos manuais**. Isso aumenta o risco de:
+
+- erro no saldo do proprietário;
+- repasse incorreto;
+- extratos sem discriminação adequada.
+
+## A solução
+
+Uma API que dá a cada proprietário uma **conta individual**, onde cada crédito e cada débito fica registrado. Em vez de decidir manualmente *"para onde foi esse dinheiro?"*, a administradora trabalha com **regras definidas previamente**.
+
+Assim, cada real movimentado fica vinculado a uma **origem**, uma **natureza** e um **destino**. Isso reduz a dependência de planilhas e de decisões manuais.
+
 ## Como funciona
 
-O caminho de cada pagamento, do momento em que entra até virar extrato:
+O caminho de cada pagamento:
 
 ```
-pagamento recebido
-      ↓
-identificado      → de qual imóvel e de qual contrato ele é
-      ↓
-classificado      → que tipo de pagamento ele é
-      ↓
-rateado           → dividido entre os proprietários, pelas regras cadastradas
-      ↓
-saldo e taxas     → o saldo de cada proprietário é atualizado e as taxas são descontadas
-      ↓
-repasse           → o dinheiro é enviado a cada proprietário
-      ↓
-extrato           → tudo fica registrado e rastreável
+pagamento → identificação → imputação → atualização do saldo → taxa → repasse → extrato
 ```
+
+| Etapa | O que acontece |
+|---|---|
+| **Identificação** | A natureza de cada lançamento é identificada. |
+| **Imputação** | As regras definem a que cada parte do pagamento se destina: aluguel, condomínio, IPTU, multas, juros… |
+| **Atualização do saldo** | O crédito ou débito é registrado na conta do proprietário, separando o saldo disponível do provisionado. |
+| **Taxa** | A taxa da administradora é calculada e registrada. |
+| **Repasse** | O dinheiro vai para o proprietário, e nunca acima do saldo disponível. |
+| **Extrato** | Tudo aparece num extrato financeiro discriminado e paginado. |
 
 ## Funcionalidades
 
 | Funcionalidade | Status |
 |---|---|
-| Identificação do pagamento | 📝 planejada |
-| Classificação do pagamento | 📝 planejada |
-| Rateio entre proprietários, por regras | 📝 planejada |
-| Saldo por proprietário | 📝 planejada |
-| Cálculo e desconto de taxas | 📝 planejada |
-| Repasses | 📝 planejada |
-| Extrato rastreável | 📝 planejada |
+| Conta individual para cada proprietário | 📝 planejada |
+| Registro de todos os créditos e débitos | 📝 planejada |
+| Identificação da natureza de cada lançamento | 📝 planejada |
+| Regras para distribuir pagamentos | 📝 planejada |
+| Controle de saldo disponível e provisionado | 📝 planejada |
+| Cálculo e registro da taxa da administradora | 📝 planejada |
+| Bloqueio de repasses acima do saldo disponível | 📝 planejada |
+| Extrato financeiro discriminado e paginado | 📝 planejada |
 | Base técnica (API, banco, Docker, testes, token, erros padronizados) | ✅ pronta |
+
+## Benefícios
+
+- **Menos erros** no rateio e nos repasses.
+- **Rastreabilidade** de cada movimentação.
+- **Automação** das regras financeiras.
+- **Prestação de contas mais clara** para o proprietário.
+- **Controle de saldo** antes de qualquer repasse.
+- **Auditoria facilitada:** cada operação gera um registro.
+- **Escalabilidade:** administrar muitos proprietários sem aumentar o trabalho manual na mesma proporção.
 
 ## Tecnologias
 
