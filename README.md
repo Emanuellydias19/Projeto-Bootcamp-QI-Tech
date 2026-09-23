@@ -2,9 +2,9 @@
 
 > **Uma API que é a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
 
-> 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As funcionalidades financeiras estão sendo modeladas e ainda não foram implementadas. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+> 🚧 **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
-**Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Funcionalidades](#funcionalidades) · [Benefícios](#benefícios) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
+**Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
 ---
 
@@ -65,29 +65,29 @@ extrato discriminado: a prestação de contas do mês
 
 Se o valor pago for diferente do boleto, a **política de imputação** declarada decide como ele se divide, e não uma planilha.
 
-## Funcionalidades
+## Decisões de modelagem
 
-| Funcionalidade | Status |
+Antes da primeira linha de código, o time decide quatro pontos e os registra na **[RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md)**, no formato *decisão → alternativa descartada → por quê*:
+
+1. **Onde o saldo mora:** um campo na conta ou a soma dos lançamentos.
+2. **Dinheiro em inteiro de centavos,** e quem fica com o arredondamento quando um valor é repartido.
+3. **Tarifa por dentro ou por fora do repasse,** e se ela vira lançamento próprio.
+4. **Chave pública da conta** versus id interno.
+
+## Status
+
+| Item | Status |
 |---|---|
-| Conta individual para cada proprietário | 📝 planejada |
-| Registro de todos os créditos e débitos | 📝 planejada |
-| Identificação da natureza de cada lançamento | 📝 planejada |
-| Regras para distribuir pagamentos | 📝 planejada |
-| Controle de saldo disponível e provisionado | 📝 planejada |
-| Cálculo e registro da taxa da administradora | 📝 planejada |
-| Bloqueio de repasses acima do saldo disponível | 📝 planejada |
-| Extrato financeiro discriminado e paginado | 📝 planejada |
+| Cliente (proprietário com CPF/CNPJ validado) | 📝 planejado |
+| Conta (saldo disponível × provisionado) | 📝 planejado |
+| Transação (créditos e débitos com natureza) | 📝 planejado |
+| Tarifa (taxa de administração no repasse) | 📝 planejado |
+| Extrato (paginado e discriminado) | 📝 planejado |
+| Regra 1: sem repasse acima do saldo disponível | 📝 planejado |
+| Regra 2: sem baixa sem política de imputação | 📝 planejado |
+| Regra 3: sem lançamento genérico | 📝 planejado |
+| RFC 0001: as quatro decisões de modelagem | 🟡 em discussão |
 | Base técnica (API, banco, Docker, testes, token, erros padronizados) | ✅ pronta |
-
-## Benefícios
-
-- **Menos erros** no rateio e nos repasses.
-- **Rastreabilidade** de cada movimentação.
-- **Automação** das regras financeiras.
-- **Prestação de contas mais clara** para o proprietário.
-- **Controle de saldo** antes de qualquer repasse.
-- **Auditoria facilitada:** cada operação gera um registro.
-- **Escalabilidade:** administrar muitos proprietários sem aumentar o trabalho manual na mesma proporção.
 
 ## Tecnologias
 
