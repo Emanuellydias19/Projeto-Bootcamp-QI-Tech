@@ -122,6 +122,7 @@ O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, 
 | Documento | O que tem |
 |---|---|
 | [docs/como-rodar.md](docs/como-rodar.md) | Instalação, execução, testes e problemas comuns. |
+| [docs/rfc/0001-modelagem-da-conta-do-proprietario.md](docs/rfc/0001-modelagem-da-conta-do-proprietario.md) | As decisões de modelagem do time: onde o saldo mora, centavos e arredondamento, tarifa e chave pública. |
 | [docs/como-o-projeto-e-organizado.md](docs/como-o-projeto-e-organizado.md) | A arquitetura: o caminho de uma requisição, o que cada pasta pode e não pode fazer e onde mexer para cada tipo de mudança. |
 | [docs/guia-da-api-base.md](docs/guia-da-api-base.md) | O guia original do projeto base: as rotas atuais com exemplos de `curl` e o catálogo de códigos de erro (`QIT…`). |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Como o time trabalha: branches, commits e pull requests. |
