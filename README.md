@@ -12,15 +12,19 @@ Uma API de gestão financeira para administradoras de imóveis, que funciona com
 
 ## A dor
 
-Administradoras de imóveis movimentam dinheiro que **pertence aos proprietários**. Elas precisam dividir corretamente cada pagamento entre aluguel, condomínio, IPTU, multas, juros, taxas e repasses.
+Uma administradora de imóveis guarda dinheiro que **não é dela**. O inquilino paga um boleto único (aluguel + condomínio + IPTU) numa conta da administradora. Ela precisa:
+
+- pagar o síndico e a prefeitura nos vencimentos deles;
+- reter a taxa de administração;
+- repassar o resto ao proprietário, lá pelo dia 10.
+
+Cada proprietário tem uma **posição própria** dentro desse caixa comum.
 
 ### O problema
 
-Quando o pagamento vem diferente do previsto, o rateio deixa de ser automático e a decisão passa para **planilhas e processos manuais**. Isso aumenta o risco de:
+O problema aparece quando entra um valor **diferente do boleto**: pagamento parcial, atraso com multa e juros, ou uma despesa lançada depois da emissão. O rateio pré-calculado deixa de valer, e alguém decide na mão como dividir aquele dinheiro entre aluguel, encargos e taxa.
 
-- erro no saldo do proprietário;
-- repasse incorreto;
-- extratos sem discriminação adequada.
+Essa decisão muda quanto o proprietário recebe, e a lei ainda proíbe quitação genérica: a **Lei 8.245/1991 (Lei do Inquilinato), art. 22, VI** exige recibo discriminado. Hoje, tudo isso vive numa planilha ao lado do ERP.
 
 ## A solução
 
