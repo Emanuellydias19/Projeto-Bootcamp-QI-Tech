@@ -14,7 +14,7 @@ A API e o banco sobem no **Docker**. Os testes rodam no **Python** da sua máqui
 | **Git** (no Windows, traz o **Git Bash**) | clonar o repositório e rodar os comandos | `git --version` |
 | **Python 3.12** | rodar os testes | `py -3.12 --version` (Mac/Linux: `python3.12 --version`) |
 
-> ⚠️ **Tem que ser o Python 3.12.** O `SQLAlchemy==2.0.23` fixado no projeto não funciona no Python 3.13: os testes quebram com `AssertionError ... TypingOnly`. Se você já tem o 3.13, instale o 3.12 junto; os dois convivem.
+> **Atenção: tem que ser o Python 3.12.** O `SQLAlchemy==2.0.23` fixado no projeto não funciona no Python 3.13: os testes quebram com `AssertionError ... TypingOnly`. Se você já tem o 3.13, instale o 3.12 junto; os dois convivem.
 
 No Windows, rode os comandos no **Git Bash**. O `curl` e a ativação do `.venv` deste guia não funcionam do mesmo jeito no PowerShell.
 
