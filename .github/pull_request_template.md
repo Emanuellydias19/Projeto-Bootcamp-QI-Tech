@@ -1,19 +1,46 @@
-## O que muda
+## Objetivo
+O que esta alteração pretende alcançar.
 
-<!-- Em uma ou duas frases: o que este PR faz. -->
+## Descrição
+Contextualização breve da alteração e por que ela está sendo feita.
 
-## Por quê
+## O que foi feito
+- Alteração 1
+- Alteração 2
+- Alteração 3
 
-<!-- Qual problema ou tarefa ele resolve. -->
+## DoR — Definition of Ready
+- [ ] Objetivo definido
+- [ ] Escopo definido
+- [ ] Critérios de aceitação definidos
+- [ ] Dependências identificadas
+- [ ] Sem bloqueios conhecidos
 
-## Como testar
+## DoD — Definition of Done
+- [ ] Implementação concluída
+- [ ] Código revisado
+- [ ] Testes implementados/atualizados quando aplicável
+- [ ] Testes executados com sucesso
+- [ ] Documentação atualizada quando necessário
+- [ ] Nenhuma informação sensível versionada
+- [ ] Pull Request revisado e aprovado
+- [ ] Sem conflitos com a `main`
+- [ ] Pronto para merge
 
-<!-- Os passos para quem revisa conferir. Ex.: "subir com docker compose up e mandar este curl…" -->
+## Boas práticas
+- Trabalhar em branches específicas
+- Não fazer commit diretamente na `main`
+- Manter commits pequenos e descritivos
+- Abrir Pull Request antes do merge
+- Solicitar revisão de outra integrante
+- Não versionar `.env`, tokens ou credenciais
+- Resolver conflitos antes do merge
+- Manter testes e documentação atualizados
 
-## Checklist
-
-- [ ] A base do PR é `develop`
-- [ ] `pytest` passa na minha máquina
-- [ ] Nenhum `.env`, senha ou dado real no commit
-- [ ] Mudei o `database.sql`? Testei com `docker compose down -v`
-- [ ] Atualizei o README ou a pasta `docs/`, se precisou
+## Tipo de mudança
+- [ ] Nova funcionalidade
+- [ ] Correção de bug
+- [ ] Refatoração
+- [ ] Documentação
+- [ ] Configuração
+- [ ] Integração
