@@ -36,9 +36,9 @@
 
 ---
 
-> **A ORCA é uma API que funciona como a conta corrente do proprietário dentro da administradora.** Todo dinheiro que entra vira lançamento, toda saída passa por regra, e o extrato é a prestação de contas: não um relatório, uma obrigação.
+> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.
 >
-> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. O modelo financeiro está em definição, e as decisões ficam registradas na [RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md). O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As decisões de modelagem e de contrato (rotas, códigos de erro, limites e acesso) estão fechadas e registradas no [documento de decisões](docs/rfc/RFC.md); os detalhes derivados do padrão da base aguardam só a revisão do time. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
@@ -62,7 +62,7 @@ Essa decisão muda quanto o proprietário recebe, e a lei ainda proíbe quitaç�
 
 ## A ideia
 
-Uma API que funciona como a **conta corrente do proprietário dentro da administradora**:
+Um **livro-caixa interno** que mantém, dentro da administradora, a posição de cada proprietário:
 
 - todo dinheiro que entra vira **lançamento**;
 - toda saída passa por **regra**;
@@ -73,7 +73,7 @@ Uma API que funciona como a **conta corrente do proprietário dentro da administ
 | Peça | O que é |
 | --- | --- |
 | **Cliente** | O proprietário, com CPF/CNPJ validado. |
-| **Conta** | Uma por proprietário, com o **saldo disponível** separado do **provisionado**. |
+| **Conta** | Uma por proprietário e imóvel, com o **saldo disponível** separado do **reservado** para condomínio e IPTU. |
 | **Transação** | O aluguel entra; condomínio, IPTU e repasse saem. Nenhuma fura o saldo. |
 | **Tarifa** | A taxa de administração, retida no momento do repasse. |
 | **Extrato** | Paginado e discriminado por natureza, porque a lei manda. |
@@ -103,26 +103,29 @@ Se o valor pago for diferente do boleto, a **política de imputação** declarad
 
 ## Decisões de modelagem
 
-Antes da primeira linha de código, o time decide quatro pontos e os registra na **[RFC 0001](docs/rfc/0001-modelagem-da-conta-do-proprietario.md)**, no formato *decisão → alternativa descartada → por quê*:
+As quatro decisões pedidas pela banca estão fechadas e registradas no **[documento de decisões](docs/rfc/RFC.md#14-decisões-tomadas)**, no formato *decisão → alternativa descartada → por quê*:
 
-1. **Onde o saldo mora:** um campo na conta ou a soma dos lançamentos.
-2. **Dinheiro em inteiro de centavos,** e quem fica com o arredondamento quando um valor é repartido.
-3. **Tarifa por dentro ou por fora do repasse,** e se ela vira lançamento próprio.
-4. **Chave pública da conta** versus id interno.
+1. **Onde o saldo mora:** em dois campos na conta, `saldo_disponivel` e `saldo_reservado`, que servem para controle e trava. Os lançamentos explicam a composição.
+2. **Dinheiro em inteiro de centavos.** A taxa é truncada para baixo, e a sobra do arredondamento fica sempre com o proprietário.
+3. **Tarifa por dentro, retida no repasse,** como lançamento próprio: o operador pede o valor bruto, e a API devolve a taxa e o líquido.
+4. **Chave pública (UUID)** em todas as rotas; o id interno nunca sai da API.
+
+O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca-modelo-dados.erd.json) e abre no ERD Editor do VS Code.
 
 ## Status
 
 | Item | Status |
 | --- | --- |
 | Cliente (proprietário com CPF/CNPJ validado) | Planejado |
-| Conta (saldo disponível × provisionado) | Planejado |
+| Conta (saldo disponível × reservado) | Planejado |
 | Transação (créditos e débitos com natureza) | Planejado |
 | Tarifa (taxa de administração no repasse) | Planejado |
 | Extrato (paginado e discriminado) | Planejado |
 | Regra 1: sem repasse acima do saldo disponível | Planejado |
 | Regra 2: sem baixa sem política de imputação | Planejado |
 | Regra 3: sem lançamento genérico | Planejado |
-| RFC 0001: as quatro decisões de modelagem | Em discussão |
+| Decisões de modelagem | Fechadas |
+| Decisões de contrato (rotas, erros, limites, acesso) | Fechadas |
 | Base técnica (API, banco, Docker, testes, token, erros padronizados) | Pronta |
 
 ## Tecnologias
@@ -158,7 +161,8 @@ O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, 
 | Documento | O que tem |
 | --- | --- |
 | [docs/como-rodar.md](docs/como-rodar.md) | Instalação, execução, testes e problemas comuns. |
-| [docs/rfc/0001-modelagem-da-conta-do-proprietario.md](docs/rfc/0001-modelagem-da-conta-do-proprietario.md) | As decisões de modelagem do time: onde o saldo mora, centavos e arredondamento, tarifa e chave pública. |
+| [docs/rfc/RFC.md](docs/rfc/RFC.md) | O documento de decisões da API: domínio, regras de negócio, rotas, fluxos, modelo de dados e as decisões tomadas e em aberto. |
+| [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca-modelo-dados.erd.json) | O diagrama do banco de dados, para abrir no ERD Editor do VS Code. |
 | [docs/como-o-projeto-e-organizado.md](docs/como-o-projeto-e-organizado.md) | A arquitetura: o caminho de uma requisição, o que cada pasta pode e não pode fazer e onde mexer para cada tipo de mudança. |
 | [docs/guia-da-api-base.md](docs/guia-da-api-base.md) | O guia original do projeto base: as rotas atuais com exemplos de `curl` e o catálogo de códigos de erro (`QIT…`). |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Como o time trabalha: branches, commits e pull requests. |
