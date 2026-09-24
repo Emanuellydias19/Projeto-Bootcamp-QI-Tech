@@ -1,0 +1,1725 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dineug/erd-editor/main/json-schema/schema.json",
+  "version": "3.0.0",
+  "settings": {
+    "width": 2000,
+    "height": 2000,
+    "scrollTop": 0,
+    "scrollLeft": 0,
+    "zoomLevel": 1,
+    "show": 495,
+    "database": 16,
+    "databaseName": "orca",
+    "canvasType": "ERD",
+    "language": 256,
+    "tableNameCase": 8,
+    "columnNameCase": 8,
+    "bracketType": 1,
+    "relationshipDataTypeSync": true,
+    "relationshipOptimization": false,
+    "maxWidthComment": -1,
+    "ignoreSaveSettings": 0
+  },
+  "doc": {
+    "tableIds": [
+      "64e27ffc97bb45a7846b0",
+      "90830de3bbe744488869b",
+      "616473999be64cdf842e7",
+      "72d13d6fba484650b04ed",
+      "6e973da7670c429dbc2f5",
+      "7c6cede030904fc982dfd",
+      "19e0b2ca64c143a38689a"
+    ],
+    "relationshipIds": [
+      "d98ae0648617436d92c8a",
+      "ea081354aa8942adbefe7",
+      "d3249225d2fe4f21a7749",
+      "36cb63bd7b8a4117a772d",
+      "880c6c48d0a449ba857c0",
+      "8c82c27274a74e93b461e",
+      "69b5a8809e0e4ee0b47bc",
+      "fd4128bec5984686bf271",
+      "0c7b421cdc01a37237148",
+      "b65018d1dbbf33b1de161"
+    ],
+    "indexIds": [
+      "1e4f3b2799874d32bc22c",
+      "8c3af8d43b7a4368a853e",
+      "d41567ad4a904d30a9b87"
+    ],
+    "memoIds": [
+      "7bcc1af076c949bd8d08f"
+    ]
+  },
+  "collections": {
+    "tableEntities": {
+      "64e27ffc97bb45a7846b0": {
+        "id": "64e27ffc97bb45a7846b0",
+        "name": "proprietario",
+        "comment": "O dono do imóvel, a quem o dinheiro pertence",
+        "columnIds": [
+          "b63da09996a549019a9bf",
+          "68a0e9f6021e41bd99c1e",
+          "2912528c9c094b86bc855",
+          "84df08e82af74503877d5",
+          "af3b0f80bfe44fb3927c2"
+        ],
+        "seqColumnIds": [
+          "b63da09996a549019a9bf",
+          "68a0e9f6021e41bd99c1e",
+          "2912528c9c094b86bc855",
+          "84df08e82af74503877d5",
+          "af3b0f80bfe44fb3927c2"
+        ],
+        "ui": {
+          "x": 60,
+          "y": 60,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "90830de3bbe744488869b": {
+        "id": "90830de3bbe744488869b",
+        "name": "politica_imputacao",
+        "comment": "A ordem em que o valor recebido quita as naturezas; a padrão nasce no database.sql (T41)",
+        "columnIds": [
+          "890ef6956f294c438d407",
+          "b3a4904451a85241a0f23",
+          "dfaeb8ffd9264788bc6cd",
+          "2dc7d3e6af0940cab653b",
+          "92c52440c4444aeab758c",
+          "48d6dba5132b4c8696d67"
+        ],
+        "seqColumnIds": [
+          "890ef6956f294c438d407",
+          "b3a4904451a85241a0f23",
+          "dfaeb8ffd9264788bc6cd",
+          "2dc7d3e6af0940cab653b",
+          "92c52440c4444aeab758c",
+          "48d6dba5132b4c8696d67"
+        ],
+        "ui": {
+          "x": 60,
+          "y": 520,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790258215018,
+          "createAt": 1790202745371
+        }
+      },
+      "616473999be64cdf842e7": {
+        "id": "616473999be64cdf842e7",
+        "name": "conta",
+        "comment": "A posição do proprietário para um imóvel",
+        "columnIds": [
+          "a7841df0a7cc414d901e3",
+          "b39a8248a1744729bcdeb",
+          "8021b9dbe0af41baaab58",
+          "58113ffc577c402fb81db",
+          "11bc40195b984bef960e7",
+          "5123cb0383364a3c9a204",
+          "23006aa4d3134166b46b8",
+          "bb489f478e0944e28aa51",
+          "12fe4bdee1464b19a5466",
+          "841df54866774e0988dfb",
+          "8fcc705adf62412f9aef2"
+        ],
+        "seqColumnIds": [
+          "a7841df0a7cc414d901e3",
+          "b39a8248a1744729bcdeb",
+          "8021b9dbe0af41baaab58",
+          "58113ffc577c402fb81db",
+          "11bc40195b984bef960e7",
+          "5123cb0383364a3c9a204",
+          "23006aa4d3134166b46b8",
+          "bb489f478e0944e28aa51",
+          "12fe4bdee1464b19a5466",
+          "841df54866774e0988dfb",
+          "8fcc705adf62412f9aef2"
+        ],
+        "ui": {
+          "x": 620,
+          "y": 240,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "72d13d6fba484650b04ed": {
+        "id": "72d13d6fba484650b04ed",
+        "name": "cobranca",
+        "comment": "O que o inquilino deve numa competência (T14, T25)",
+        "columnIds": [
+          "aebc71c74a754e8797ca0",
+          "47ab0c77c9c24ed088978",
+          "607cda38373f41fc99794",
+          "051b0ee4295147d885860",
+          "2fbc7f9c19834439988e6",
+          "a2fca79feaed4b04825d2"
+        ],
+        "seqColumnIds": [
+          "aebc71c74a754e8797ca0",
+          "47ab0c77c9c24ed088978",
+          "607cda38373f41fc99794",
+          "051b0ee4295147d885860",
+          "2fbc7f9c19834439988e6",
+          "a2fca79feaed4b04825d2"
+        ],
+        "ui": {
+          "x": 620,
+          "y": 760,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "6e973da7670c429dbc2f5": {
+        "id": "6e973da7670c429dbc2f5",
+        "name": "item_cobranca",
+        "comment": "Quanto é devido de uma natureza na competência (T25)",
+        "columnIds": [
+          "e727d04a009e4115abd34",
+          "439f35ee350e473d950fe",
+          "428c8503fb344f66a8bdc",
+          "609588032ba1465caf071",
+          "8779922240de4e7a933b8"
+        ],
+        "seqColumnIds": [
+          "e727d04a009e4115abd34",
+          "439f35ee350e473d950fe",
+          "428c8503fb344f66a8bdc",
+          "609588032ba1465caf071",
+          "8779922240de4e7a933b8"
+        ],
+        "ui": {
+          "x": 1180,
+          "y": 820,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "7c6cede030904fc982dfd": {
+        "id": "7c6cede030904fc982dfd",
+        "name": "transacao",
+        "comment": "Um movimento de dinheiro",
+        "columnIds": [
+          "541320e1078145cf97a26",
+          "c97eed4b26b84559aee36",
+          "368d07a1b526441ea8a72",
+          "019db4e0e5e54a12895fc",
+          "05c7aed511d240aea6e94",
+          "a79d76dd8b5c4aa6bcd9c",
+          "148098026423493080e0d",
+          "28cff2a192984a59bb96f",
+          "3c393d70f7f949b8b0d3d"
+        ],
+        "seqColumnIds": [
+          "541320e1078145cf97a26",
+          "c97eed4b26b84559aee36",
+          "368d07a1b526441ea8a72",
+          "019db4e0e5e54a12895fc",
+          "05c7aed511d240aea6e94",
+          "a79d76dd8b5c4aa6bcd9c",
+          "148098026423493080e0d",
+          "28cff2a192984a59bb96f",
+          "3c393d70f7f949b8b0d3d"
+        ],
+        "ui": {
+          "x": 1180,
+          "y": 60,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790253684638,
+          "createAt": 1790202745371
+        }
+      },
+      "19e0b2ca64c143a38689a": {
+        "id": "19e0b2ca64c143a38689a",
+        "name": "lancamento",
+        "comment": "Uma parte da transação, com uma única natureza",
+        "columnIds": [
+          "9d78fb8af2564b279bed2",
+          "daac1dbb8f124f2ab1fd2",
+          "4b3f5dd4b0464e32ab909",
+          "0b7926283f434c78b4da3",
+          "e0b7d6bd1ac848778a723",
+          "48aaf294087c42ce94f17",
+          "baeb5ab6c27b4e9d9daf0",
+          "0e601ee315624efdb31d5"
+        ],
+        "seqColumnIds": [
+          "9d78fb8af2564b279bed2",
+          "daac1dbb8f124f2ab1fd2",
+          "4b3f5dd4b0464e32ab909",
+          "0b7926283f434c78b4da3",
+          "e0b7d6bd1ac848778a723",
+          "48aaf294087c42ce94f17",
+          "baeb5ab6c27b4e9d9daf0",
+          "0e601ee315624efdb31d5"
+        ],
+        "ui": {
+          "x": 1180,
+          "y": 440,
+          "zIndex": 2,
+          "widthName": 170,
+          "widthComment": 260,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      }
+    },
+    "tableColumnEntities": {
+      "b63da09996a549019a9bf": {
+        "id": "b63da09996a549019a9bf",
+        "tableId": "64e27ffc97bb45a7846b0",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "68a0e9f6021e41bd99c1e": {
+        "id": "68a0e9f6021e41bd99c1e",
+        "tableId": "64e27ffc97bb45a7846b0",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "2912528c9c094b86bc855": {
+        "id": "2912528c9c094b86bc855",
+        "tableId": "64e27ffc97bb45a7846b0",
+        "name": "documento",
+        "comment": "CPF/CNPJ; unicidade do cadastro",
+        "dataType": "CHAR",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "84df08e82af74503877d5": {
+        "id": "84df08e82af74503877d5",
+        "tableId": "64e27ffc97bb45a7846b0",
+        "name": "nome",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "af3b0f80bfe44fb3927c2": {
+        "id": "af3b0f80bfe44fb3927c2",
+        "tableId": "64e27ffc97bb45a7846b0",
+        "name": "criado_em",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "890ef6956f294c438d407": {
+        "id": "890ef6956f294c438d407",
+        "tableId": "90830de3bbe744488869b",
+        "name": "id",
+        "comment": "PK",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "dfaeb8ffd9264788bc6cd": {
+        "id": "dfaeb8ffd9264788bc6cd",
+        "tableId": "90830de3bbe744488869b",
+        "name": "nome",
+        "comment": "",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "2dc7d3e6af0940cab653b": {
+        "id": "2dc7d3e6af0940cab653b",
+        "tableId": "90830de3bbe744488869b",
+        "name": "versao",
+        "comment": "versionada, nunca editada no lugar",
+        "dataType": "INT",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "92c52440c4444aeab758c": {
+        "id": "92c52440c4444aeab758c",
+        "tableId": "90830de3bbe744488869b",
+        "name": "ordem_naturezas",
+        "comment": "juros, multa, encargos, aluguel, despesa_extra (T39)",
+        "dataType": "JSONB",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790259217421,
+          "createAt": 1790202745371
+        }
+      },
+      "48d6dba5132b4c8696d67": {
+        "id": "48d6dba5132b4c8696d67",
+        "tableId": "90830de3bbe744488869b",
+        "name": "vigente_desde",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "a7841df0a7cc414d901e3": {
+        "id": "a7841df0a7cc414d901e3",
+        "tableId": "616473999be64cdf842e7",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "b39a8248a1744729bcdeb": {
+        "id": "b39a8248a1744729bcdeb",
+        "tableId": "616473999be64cdf842e7",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "8021b9dbe0af41baaab58": {
+        "id": "8021b9dbe0af41baaab58",
+        "tableId": "616473999be64cdf842e7",
+        "name": "proprietario_id",
+        "comment": "FK proprietario",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "58113ffc577c402fb81db": {
+        "id": "58113ffc577c402fb81db",
+        "tableId": "616473999be64cdf842e7",
+        "name": "imovel_referencia",
+        "comment": "UNIQUE com proprietario_id: uma conta por imóvel",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "11bc40195b984bef960e7": {
+        "id": "11bc40195b984bef960e7",
+        "tableId": "616473999be64cdf842e7",
+        "name": "saldo_disponivel",
+        "comment": "o que pode ser repassado; trava do repasse (T13)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "5123cb0383364a3c9a204": {
+        "id": "5123cb0383364a3c9a204",
+        "tableId": "616473999be64cdf842e7",
+        "name": "saldo_reservado",
+        "comment": "guardado para condomínio e IPTU; trava do encargo (T13)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "23006aa4d3134166b46b8": {
+        "id": "23006aa4d3134166b46b8",
+        "tableId": "616473999be64cdf842e7",
+        "name": "taxa_administracao_bps",
+        "comment": "taxa de administração em pontos-base (0 a 10000)",
+        "dataType": "INT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "bb489f478e0944e28aa51": {
+        "id": "bb489f478e0944e28aa51",
+        "tableId": "616473999be64cdf842e7",
+        "name": "multa_bps",
+        "comment": "multa do contrato, em pontos-base (T18)",
+        "dataType": "INT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "12fe4bdee1464b19a5466": {
+        "id": "12fe4bdee1464b19a5466",
+        "tableId": "616473999be64cdf842e7",
+        "name": "juros_mensal_bps",
+        "comment": "juros mensais do contrato, em pontos-base (T18)",
+        "dataType": "INT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "841df54866774e0988dfb": {
+        "id": "841df54866774e0988dfb",
+        "tableId": "616473999be64cdf842e7",
+        "name": "politica_id",
+        "comment": "FK politica_imputacao",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "8fcc705adf62412f9aef2": {
+        "id": "8fcc705adf62412f9aef2",
+        "tableId": "616473999be64cdf842e7",
+        "name": "criado_em",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "aebc71c74a754e8797ca0": {
+        "id": "aebc71c74a754e8797ca0",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "47ab0c77c9c24ed088978": {
+        "id": "47ab0c77c9c24ed088978",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "607cda38373f41fc99794": {
+        "id": "607cda38373f41fc99794",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "conta_id",
+        "comment": "FK conta",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "051b0ee4295147d885860": {
+        "id": "051b0ee4295147d885860",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "competencia",
+        "comment": "mês de referência (AAAA-MM); UNIQUE com conta_id",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "2fbc7f9c19834439988e6": {
+        "id": "2fbc7f9c19834439988e6",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "vencimento",
+        "comment": "base da multa e dos juros (RN14)",
+        "dataType": "DATE",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "a2fca79feaed4b04825d2": {
+        "id": "a2fca79feaed4b04825d2",
+        "tableId": "72d13d6fba484650b04ed",
+        "name": "criado_em",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "e727d04a009e4115abd34": {
+        "id": "e727d04a009e4115abd34",
+        "tableId": "6e973da7670c429dbc2f5",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "439f35ee350e473d950fe": {
+        "id": "439f35ee350e473d950fe",
+        "tableId": "6e973da7670c429dbc2f5",
+        "name": "cobranca_id",
+        "comment": "FK cobranca",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "428c8503fb344f66a8bdc": {
+        "id": "428c8503fb344f66a8bdc",
+        "tableId": "6e973da7670c429dbc2f5",
+        "name": "natureza",
+        "comment": "aluguel, condominio, iptu ou despesa_extra (T36)",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790258215018,
+          "createAt": 1790202745371
+        }
+      },
+      "609588032ba1465caf071": {
+        "id": "609588032ba1465caf071",
+        "tableId": "6e973da7670c429dbc2f5",
+        "name": "valor_devido_centavos",
+        "comment": "quanto é devido dessa natureza",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "8779922240de4e7a933b8": {
+        "id": "8779922240de4e7a933b8",
+        "tableId": "6e973da7670c429dbc2f5",
+        "name": "criado_em",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "541320e1078145cf97a26": {
+        "id": "541320e1078145cf97a26",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "c97eed4b26b84559aee36": {
+        "id": "c97eed4b26b84559aee36",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "368d07a1b526441ea8a72": {
+        "id": "368d07a1b526441ea8a72",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "conta_id",
+        "comment": "FK conta",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "019db4e0e5e54a12895fc": {
+        "id": "019db4e0e5e54a12895fc",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "tipo",
+        "comment": "recebimento, encargo, repasse ou estorno (T22, T37)",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790258215018,
+          "createAt": 1790202745371
+        }
+      },
+      "148098026423493080e0d": {
+        "id": "148098026423493080e0d",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "chave_idempotencia",
+        "comment": "UNIQUE com conta_id: barra o reenvio",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "28cff2a192984a59bb96f": {
+        "id": "28cff2a192984a59bb96f",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "resultado",
+        "comment": "resposta guardada para a repetição idêntica",
+        "dataType": "JSONB",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "3c393d70f7f949b8b0d3d": {
+        "id": "3c393d70f7f949b8b0d3d",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "criado_em",
+        "comment": "quando aconteceu",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "9d78fb8af2564b279bed2": {
+        "id": "9d78fb8af2564b279bed2",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "id",
+        "comment": "PK interna, nunca sai na resposta",
+        "dataType": "BIGSERIAL",
+        "default": "",
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "daac1dbb8f124f2ab1fd2": {
+        "id": "daac1dbb8f124f2ab1fd2",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "4b3f5dd4b0464e32ab909": {
+        "id": "4b3f5dd4b0464e32ab909",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "transacao_id",
+        "comment": "FK transacao",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "0b7926283f434c78b4da3": {
+        "id": "0b7926283f434c78b4da3",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "conta_id",
+        "comment": "FK conta",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "e0b7d6bd1ac848778a723": {
+        "id": "e0b7d6bd1ac848778a723",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "natureza",
+        "comment": "aluguel, condominio, iptu, despesa_extra, multa, juros, taxa, repasse",
+        "dataType": "TEXT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790258215018,
+          "createAt": 1790202745371
+        }
+      },
+      "48aaf294087c42ce94f17": {
+        "id": "48aaf294087c42ce94f17",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "valor_centavos",
+        "comment": "sinalizado, nunca alterado",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "0e601ee315624efdb31d5": {
+        "id": "0e601ee315624efdb31d5",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "criado_em",
+        "comment": "",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "baeb5ab6c27b4e9d9daf0": {
+        "id": "baeb5ab6c27b4e9d9daf0",
+        "tableId": "19e0b2ca64c143a38689a",
+        "name": "item_cobranca_id",
+        "comment": "FK item_cobranca; o item que quitou, quando houver (T25)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 0,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790213257501,
+          "createAt": 1790213257501
+        }
+      },
+      "05c7aed511d240aea6e94": {
+        "id": "05c7aed511d240aea6e94",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "transacao_estornada_id",
+        "comment": "FK transacao; só no estorno; UNIQUE: estornada no máximo uma vez (DD04)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 4,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790259217421,
+          "createAt": 1790213257501
+        }
+      },
+      "a79d76dd8b5c4aa6bcd9c": {
+        "id": "a79d76dd8b5c4aa6bcd9c",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "cobranca_id",
+        "comment": "FK cobranca; a cobrança que o recebimento pagou, só no recebimento (T29)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 0,
+        "ui": {
+          "keys": 2,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790253684638,
+          "createAt": 1790253684638
+        }
+      },
+      "b3a4904451a85241a0f23": {
+        "id": "b3a4904451a85241a0f23",
+        "tableId": "90830de3bbe744488869b",
+        "name": "chave",
+        "comment": "identificador público (DD08); a política padrão v1 tem chave fixa (T41)",
+        "dataType": "UUID",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 0,
+          "widthName": 150,
+          "widthComment": 260,
+          "widthDataType": 100,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790259217421,
+          "createAt": 1790258215018
+        }
+      }
+    },
+    "relationshipEntities": {
+      "d98ae0648617436d92c8a": {
+        "id": "d98ae0648617436d92c8a",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "64e27ffc97bb45a7846b0",
+          "columnIds": [
+            "b63da09996a549019a9bf"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "616473999be64cdf842e7",
+          "columnIds": [
+            "8021b9dbe0af41baaab58"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "ea081354aa8942adbefe7": {
+        "id": "ea081354aa8942adbefe7",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "90830de3bbe744488869b",
+          "columnIds": [
+            "890ef6956f294c438d407"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "616473999be64cdf842e7",
+          "columnIds": [
+            "841df54866774e0988dfb"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "d3249225d2fe4f21a7749": {
+        "id": "d3249225d2fe4f21a7749",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "616473999be64cdf842e7",
+          "columnIds": [
+            "a7841df0a7cc414d901e3"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "368d07a1b526441ea8a72"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "36cb63bd7b8a4117a772d": {
+        "id": "36cb63bd7b8a4117a772d",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "541320e1078145cf97a26"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "19e0b2ca64c143a38689a",
+          "columnIds": [
+            "4b3f5dd4b0464e32ab909"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "880c6c48d0a449ba857c0": {
+        "id": "880c6c48d0a449ba857c0",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "616473999be64cdf842e7",
+          "columnIds": [
+            "a7841df0a7cc414d901e3"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "19e0b2ca64c143a38689a",
+          "columnIds": [
+            "0b7926283f434c78b4da3"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "8c82c27274a74e93b461e": {
+        "id": "8c82c27274a74e93b461e",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "616473999be64cdf842e7",
+          "columnIds": [
+            "a7841df0a7cc414d901e3"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "72d13d6fba484650b04ed",
+          "columnIds": [
+            "607cda38373f41fc99794"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "69b5a8809e0e4ee0b47bc": {
+        "id": "69b5a8809e0e4ee0b47bc",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "72d13d6fba484650b04ed",
+          "columnIds": [
+            "aebc71c74a754e8797ca0"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "6e973da7670c429dbc2f5",
+          "columnIds": [
+            "439f35ee350e473d950fe"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "fd4128bec5984686bf271": {
+        "id": "fd4128bec5984686bf271",
+        "identification": false,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "6e973da7670c429dbc2f5",
+          "columnIds": [
+            "e727d04a009e4115abd34"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "19e0b2ca64c143a38689a",
+          "columnIds": [
+            "baeb5ab6c27b4e9d9daf0"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790213257501,
+          "createAt": 1790213257501
+        }
+      },
+      "0c7b421cdc01a37237148": {
+        "id": "0c7b421cdc01a37237148",
+        "identification": false,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "72d13d6fba484650b04ed",
+          "columnIds": [
+            "aebc71c74a754e8797ca0"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "a79d76dd8b5c4aa6bcd9c"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1790253684638,
+          "createAt": 1790253684638
+        }
+      },
+      "b65018d1dbbf33b1de161": {
+        "id": "b65018d1dbbf33b1de161",
+        "identification": false,
+        "relationshipType": 4,
+        "startRelationshipType": 1,
+        "start": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "541320e1078145cf97a26"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "05c7aed511d240aea6e94"
+          ],
+          "x": 0,
+          "y": 0,
+          "direction": 2
+        },
+        "meta": {
+          "updateAt": 1790253684638,
+          "createAt": 1790253684638
+        }
+      }
+    },
+    "indexEntities": {
+      "1e4f3b2799874d32bc22c": {
+        "id": "1e4f3b2799874d32bc22c",
+        "name": "uq_conta_proprietario_imovel",
+        "tableId": "616473999be64cdf842e7",
+        "indexColumnIds": [
+          "148c7d197f084ae6824a9",
+          "67ca26d7fbb6403a9fe6a"
+        ],
+        "seqIndexColumnIds": [
+          "148c7d197f084ae6824a9",
+          "67ca26d7fbb6403a9fe6a"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "8c3af8d43b7a4368a853e": {
+        "id": "8c3af8d43b7a4368a853e",
+        "name": "uq_transacao_conta_idempotencia",
+        "tableId": "7c6cede030904fc982dfd",
+        "indexColumnIds": [
+          "348027ad6039429cbf421",
+          "981b7db076db4fa5bac65"
+        ],
+        "seqIndexColumnIds": [
+          "348027ad6039429cbf421",
+          "981b7db076db4fa5bac65"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "d41567ad4a904d30a9b87": {
+        "id": "d41567ad4a904d30a9b87",
+        "name": "uq_cobranca_conta_competencia",
+        "tableId": "72d13d6fba484650b04ed",
+        "indexColumnIds": [
+          "79fcaa3156e5408ca4d28",
+          "479637bd48c4428599608"
+        ],
+        "seqIndexColumnIds": [
+          "79fcaa3156e5408ca4d28",
+          "479637bd48c4428599608"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      }
+    },
+    "indexColumnEntities": {
+      "148c7d197f084ae6824a9": {
+        "id": "148c7d197f084ae6824a9",
+        "indexId": "1e4f3b2799874d32bc22c",
+        "columnId": "8021b9dbe0af41baaab58",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "67ca26d7fbb6403a9fe6a": {
+        "id": "67ca26d7fbb6403a9fe6a",
+        "indexId": "1e4f3b2799874d32bc22c",
+        "columnId": "58113ffc577c402fb81db",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "348027ad6039429cbf421": {
+        "id": "348027ad6039429cbf421",
+        "indexId": "8c3af8d43b7a4368a853e",
+        "columnId": "368d07a1b526441ea8a72",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "981b7db076db4fa5bac65": {
+        "id": "981b7db076db4fa5bac65",
+        "indexId": "8c3af8d43b7a4368a853e",
+        "columnId": "148098026423493080e0d",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "79fcaa3156e5408ca4d28": {
+        "id": "79fcaa3156e5408ca4d28",
+        "indexId": "d41567ad4a904d30a9b87",
+        "columnId": "607cda38373f41fc99794",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      },
+      "479637bd48c4428599608": {
+        "id": "479637bd48c4428599608",
+        "indexId": "d41567ad4a904d30a9b87",
+        "columnId": "051b0ee4295147d885860",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790202745371,
+          "createAt": 1790202745371
+        }
+      }
+    },
+    "memoEntities": {
+      "7bcc1af076c949bd8d08f": {
+        "id": "7bcc1af076c949bd8d08f",
+        "value": "Modelo do RFC v1 + decisões do time (23 e 24/09/2026).\nFonte: docs/rfc/RFC.md, seção 12.\n\nSaldos (T13 e T39): condomínio e IPTU contam no reservado; aluguel, multa, juros, despesa_extra, taxa e repasse no disponível.\nEm aberto numa cobrança = devido do item - SUM(lançamentos que apontam para ele).\nRecebimento aponta para a cobrança que pagou (T29): é assim que se sabe se a multa já foi cobrada (RN14).\nEstorno: UNIQUE em transacao_estornada_id, uma transação é estornada no máximo uma vez (DD04).\nPolítica padrão v1 criada no database.sql, com chave fixa (T41).\n\nNenhuma decisão em aberto.",
+        "ui": {
+          "x": 60,
+          "y": 860,
+          "zIndex": 2,
+          "width": 420,
+          "height": 240,
+          "color": ""
+        },
+        "meta": {
+          "updateAt": 1790259217421,
+          "createAt": 1790202745371
+        }
+      }
+    }
+  }
+}
