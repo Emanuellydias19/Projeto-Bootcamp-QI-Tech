@@ -1,0 +1,7 @@
+{
+  "MD013": false,
+  "MD033": {
+    "allowed_elements": ["p", "img", "a", "div"]
+  },
+  "MD041": false
+}
