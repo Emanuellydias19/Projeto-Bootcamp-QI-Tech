@@ -3,6 +3,8 @@ from abc import ABCMeta
 from sqlalchemy.exc import IntegrityError
 
 from database import get_context
+from models.base import Base
+from utils.chave import is_valid_chave
 from utils.logger import get_logger
 
 
@@ -35,3 +37,14 @@ class BaseController(metaclass=ABCMeta):
                 raise errors_by_constraint[constraint_name]()
 
             raise
+
+    def _get_or_raise(self, repository, chave: str, not_found_error: type) -> Base:
+        if not is_valid_chave(chave):
+            raise not_found_error(chave)
+
+        entity = repository.get_by_chave(chave)
+
+        if entity is None:
+            raise not_found_error(chave)
+
+        return entity

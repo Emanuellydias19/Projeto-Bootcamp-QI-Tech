@@ -9,7 +9,13 @@ from middlewares import (
     register_request_logger_middleware,
     register_session_manager_middleware,
 )
-from resources import ContaResource, HealthCheckResource, ProprietarioResource, SampleEntityResource
+from resources import (
+    CobrancaResource,
+    ContaResource,
+    HealthCheckResource,
+    ProprietarioResource,
+    SampleEntityResource,
+)
 from utils.logger import setup_logging
 
 
@@ -126,6 +132,7 @@ def create_app() -> FastAPI:
     sample_entity_resource = SampleEntityResource()
     proprietario_resource = ProprietarioResource()
     conta_resource = ContaResource()
+    cobranca_resource = CobrancaResource()
 
     application.add_api_route("/", health_check_resource.on_get_home, methods=["GET"])
     application.add_api_route(
@@ -164,6 +171,10 @@ def create_app() -> FastAPI:
 
     application.add_api_route("/contas", conta_resource.on_post, methods=["POST"])
     application.add_api_route("/contas/{conta_chave}/saldo", conta_resource.on_get_saldo, methods=["GET"])
+
+    application.add_api_route("/contas/{conta_chave}/cobrancas", cobranca_resource.on_post, methods=["POST"])
+    application.add_api_route("/cobrancas/{cobranca_chave}", cobranca_resource.on_get_by_chave, methods=["GET"])
+    application.add_api_route("/cobrancas/{cobranca_chave}/itens", cobranca_resource.on_post_item, methods=["POST"])
 
     register_error_handlers(application)
 

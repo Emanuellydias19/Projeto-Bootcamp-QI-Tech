@@ -568,7 +568,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 | `QIT001022` | 409 | `Idempotency-Key` já usada com outro corpo, ou para outra transação |
 | `QIT001023` | 404 | transação não encontrada |
 | `QIT001024` | 409 | transação já estornada, ou que é ela mesma um estorno |
-| `QIT001025` | 422 | data com o formato certo que não existe no calendário (por exemplo, `2026-02-30`) |
+| `QIT001025` | 422 | data ou competência com o formato certo que não existe no calendário (por exemplo, `2026-02-30` ou `2026-13`, DD31) |
 | `QIT001026` | 422 | repasse com valor bruto maior que zero e menor ou igual à taxa pendente (T40 e DD25) |
 | `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento já registrado na cobrança (DD21) |
 
@@ -1162,6 +1162,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/cobrancas
 | Já existe cobrança para essa competência | 409 | `QIT001016` |
 | Item com valor menor ou igual a zero | 422 | `QIT001018` |
 | `vencimento` inexistente no calendário | 422 | `QIT001025` |
+| `competencia` com mês inexistente (por exemplo, `2026-13`) | 422 | `QIT001025` (DD31) |
 
 ### 7.2.9 POST /cobrancas/{chave}/itens
 
@@ -1817,7 +1818,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, e a DD31 foi derivada na implementação, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1913,6 +1914,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD28 | **Validação de valores e documentos mais rígida que a da base:** centavos e pontos-base só como inteiro, sem casa decimal (`150000.0` e `1000.0` respondem 400); documentos e datas com `[0-9]` no padrão, e não `\d`. *Derivado, aguarda revisão:* o teto dos valores em centavos é 9007199254740991, o maior inteiro que um cliente JSON lê sem perder precisão. O valor menor ou igual a zero continua respondendo 422 (DD06) | T09; o `integer` do jsonschema aceita `150000.0`, e o `\d` aceita dígitos que não são de `0` a `9` |
 | DD29 | **Testes de concorrência nas operações de dinheiro:** requisições em paralelo por HTTP provam que repasses simultâneos não deixam saldo negativo nem divergência entre saldo e extrato, e que duas requisições com a mesma `Idempotency-Key` produzem um efeito só | T01, T02 e T03; a base e a referência não têm teste de concorrência |
 | DD30 | **Código sem comentários:** a intenção fica nos nomes, na estrutura e nos testes, e as decisões ficam neste documento e na descrição dos pull requests | Decisão de estilo do time para a implementação |
+| DD31 | *Derivado, aguarda revisão:* **datas de referência dos encargos e competência.** Os itens enviados na criação da cobrança usam o vencimento como data de referência da multa e dos juros, mesmo que a cobrança seja registrada depois dele. Só o item incluído depois, pela 7.2.9, usa a data da inclusão (T42), que é a data de São Paulo do `criado_em` do item (DD22): a multa incide se o pagamento for depois dessa data, e os juros correm a partir dela. A competência com mês fora de 01 a 12 responde 422 (`QIT001025`), como uma data que não existe (DD10) | T42, DD10, DD20 e DD22 |
 
 ---
 

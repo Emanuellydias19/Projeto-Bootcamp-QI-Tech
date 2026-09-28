@@ -176,3 +176,47 @@ class NotFoundPoliticaImputacao(QIException):
         description = f"Allocation policy with key {politica_imputacao_chave} was not found."
         translation = "A política de imputação informada não foi encontrada."
         super().__init__(title, self.code, http_status, description, translation)
+
+
+class NotFoundCobranca(QIException):
+    code = "QIT001015"
+
+    def __init__(self, cobranca_chave) -> None:
+        title = "Charge not found"
+        http_status = 404
+        description = f"Charge with key {cobranca_chave} was not found."
+        translation = "A cobrança informada não foi encontrada."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class DuplicatedCobranca(QIException):
+    code = "QIT001016"
+
+    def __init__(self) -> None:
+        title = "Charge already registered"
+        http_status = 409
+        description = "There is already a charge for this account and reference month."
+        translation = "Já existe uma cobrança para esta conta e competência."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class InvalidValor(QIException):
+    code = "QIT001018"
+
+    def __init__(self, valor_centavos) -> None:
+        title = "Invalid amount"
+        http_status = 422
+        description = f"The amount {valor_centavos} must be greater than zero."
+        translation = "O valor precisa ser maior que zero."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class InvalidDate(QIException):
+    code = "QIT001025"
+
+    def __init__(self, field, text) -> None:
+        title = "Invalid date"
+        http_status = 422
+        description = f"The {field} {text} does not exist in the calendar."
+        translation = "A data informada não existe no calendário."
+        super().__init__(title, self.code, http_status, description, translation)

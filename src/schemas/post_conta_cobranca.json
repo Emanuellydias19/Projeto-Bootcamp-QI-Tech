@@ -1,0 +1,49 @@
+{
+  "title": "PostContaCobranca",
+  "type": "object",
+  "properties": {
+    "competencia": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "maxLength": 7
+    },
+    "vencimento": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "maxLength": 10
+    },
+    "itens": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "natureza": {
+            "type": "string",
+            "enum": [
+              "aluguel",
+              "condominio",
+              "iptu",
+              "despesa_extra"
+            ]
+          },
+          "valor_centavos": {
+            "type": "integer",
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "natureza",
+          "valor_centavos"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "competencia",
+    "vencimento",
+    "itens"
+  ],
+  "additionalProperties": false
+}

@@ -81,3 +81,28 @@ CREATE TABLE conta(
     CONSTRAINT ck_conta_multa_bps CHECK (multa_bps BETWEEN 0 AND 10000),
     CONSTRAINT ck_conta_juros_mensal_bps CHECK (juros_mensal_bps BETWEEN 0 AND 10000)
 );
+
+CREATE TABLE cobranca(
+    id                              BIGSERIAL PRIMARY KEY,
+    chave                           CHAR(36) NOT NULL,
+    conta_id                        BIGINT NOT NULL,
+    competencia                     TEXT NOT NULL,
+    vencimento                      DATE NOT NULL,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT fk_cobranca_conta FOREIGN KEY (conta_id) REFERENCES conta(id),
+    CONSTRAINT uq_cobranca_chave UNIQUE(chave),
+    CONSTRAINT uq_cobranca_conta_competencia UNIQUE(conta_id, competencia)
+);
+
+CREATE TABLE item_cobranca(
+    id                              BIGSERIAL PRIMARY KEY,
+    cobranca_id                     BIGINT NOT NULL,
+    natureza                        TEXT NOT NULL,
+    valor_devido_centavos           BIGINT NOT NULL,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT fk_item_cobranca_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobranca(id),
+    CONSTRAINT ck_item_cobranca_natureza CHECK (natureza IN ('aluguel', 'condominio', 'iptu', 'despesa_extra')),
+    CONSTRAINT ck_item_cobranca_valor_devido CHECK (valor_devido_centavos > 0)
+);
+
+CREATE INDEX ix_item_cobranca_cobranca_id ON item_cobranca(cobranca_id);
