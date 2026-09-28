@@ -118,6 +118,32 @@ class RequestGenerator:
         return response.response_status, response.response_json
 
     @staticmethod
+    def POST_conta_encargo_pagamentos(conta_chave: str, encargo_payload: dict, idempotency_key: str = None) -> tuple:
+        if idempotency_key is None:
+            idempotency_key = str(uuid4())
+
+        response = ClientRequisition.send(
+            "POST",
+            f"/contas/{conta_chave}/encargos/pagamentos",
+            payload=encargo_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN, "Idempotency-Key": idempotency_key},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
+    def POST_conta_repasses(conta_chave: str, repasse_payload: dict, idempotency_key: str = None) -> tuple:
+        if idempotency_key is None:
+            idempotency_key = str(uuid4())
+
+        response = ClientRequisition.send(
+            "POST",
+            f"/contas/{conta_chave}/repasses",
+            payload=repasse_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN, "Idempotency-Key": idempotency_key},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
     def GET_cobranca(cobranca_chave: str, params: dict = None) -> tuple:
         response = ClientRequisition.send(
             "GET",

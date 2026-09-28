@@ -130,6 +130,21 @@ class PayloadGenerator:
         return payload
 
     @staticmethod
+    def create_encargo_payload(natureza: str, valor_centavos: int) -> dict:
+        payload = {
+            "natureza": natureza,
+            "valor_centavos": valor_centavos,
+        }
+        return payload
+
+    @staticmethod
+    def create_repasse_payload(valor_centavos: int) -> dict:
+        payload = {
+            "valor_centavos": valor_centavos,
+        }
+        return payload
+
+    @staticmethod
     def create_item_payload(natureza: str = None, valor_centavos: int = None) -> dict:
         if natureza is None:
             natureza = "despesa_extra"

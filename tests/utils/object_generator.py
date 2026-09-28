@@ -34,9 +34,17 @@ class ObjectGenerator:
         return response
 
     @staticmethod
-    def create_conta(proprietario_chave: str, multa_bps: int = None, juros_mensal_bps: int = None) -> dict:
+    def create_conta(
+        proprietario_chave: str,
+        multa_bps: int = None,
+        juros_mensal_bps: int = None,
+        taxa_administracao_bps: int = None,
+    ) -> dict:
         conta_payload = PayloadGenerator.create_conta_payload(
-            proprietario_chave, multa_bps=multa_bps, juros_mensal_bps=juros_mensal_bps
+            proprietario_chave,
+            taxa_administracao_bps=taxa_administracao_bps,
+            multa_bps=multa_bps,
+            juros_mensal_bps=juros_mensal_bps,
         )
 
         status, response = RequestGenerator.POST_contas(conta_payload)
@@ -51,6 +59,15 @@ class ObjectGenerator:
         )
 
         status, response = RequestGenerator.POST_conta_cobrancas(conta_chave, cobranca_payload)
+        assert status == 201
+
+        return response
+
+    @staticmethod
+    def create_recebimento(cobranca_chave: str, valor_centavos: int, pago_em: str) -> dict:
+        recebimento_payload = PayloadGenerator.create_recebimento_payload(valor_centavos, pago_em)
+
+        status, response = RequestGenerator.POST_cobranca_recebimentos(cobranca_chave, recebimento_payload)
         assert status == 201
 
         return response
