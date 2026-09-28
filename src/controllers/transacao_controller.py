@@ -8,7 +8,10 @@ from errors import (
     InvalidPagoEm,
     NotFoundCobranca,
     NotFoundConta,
+    NotFoundTransacao,
+    NotLastRecebimento,
     ReusedIdempotencyKey,
+    TransacaoNotEstornavel,
     ValorAboveDevido,
     ValorNotAboveTaxa,
 )
@@ -142,6 +145,48 @@ class TransacaoController(BaseController):
 
         return resultado, True
 
+    def estornar(self, transacao_chave: str, chave_idempotencia: str) -> tuple:
+        self.logger.debug("Registrando um estorno")
+
+        transacao_estornada = self._get_or_raise(self.transacao_repository, transacao_chave, NotFoundTransacao)
+        conta = self.conta_repository.get_by_id_for_update(transacao_estornada.conta_id)
+
+        hash_da_requisicao = hash_requisicao(Transacao.TIPO_ESTORNO, transacao_chave, {})
+        transacao_anterior = self._get_transacao_anterior(conta, chave_idempotencia, hash_da_requisicao)
+
+        if transacao_anterior is not None:
+            return transacao_anterior.resultado, False
+
+        if transacao_estornada.tipo == Transacao.TIPO_ESTORNO:
+            raise TransacaoNotEstornavel()
+
+        if self.transacao_repository.get_by_transacao_estornada(transacao_estornada) is not None:
+            raise TransacaoNotEstornavel()
+
+        if transacao_estornada.tipo == Transacao.TIPO_RECEBIMENTO:
+            ultimo_recebimento = self.transacao_repository.get_ultimo_recebimento(transacao_estornada.cobranca_id)
+
+            if ultimo_recebimento.id != transacao_estornada.id:
+                raise NotLastRecebimento()
+
+        parcelas = []
+        for lancamento in self.lancamento_repository.list_by_transacao(transacao_estornada):
+            parcelas.append(self._parcela(lancamento.natureza, -lancamento.valor_centavos, lancamento.item_cobranca_id))
+
+        self._check_saldos_do_estorno(conta, parcelas)
+
+        transacao = self.transacao_repository.create_estorno(
+            conta, transacao_estornada, chave_idempotencia, hash_da_requisicao
+        )
+        self._lancar(transacao, conta, parcelas)
+
+        resultado = TransacaoDTO.estorno_to_dict(transacao, transacao_estornada, parcelas)
+        self._guardar_resultado(transacao, resultado)
+
+        self.session.commit()
+
+        return resultado, True
+
     def _get_transacao_anterior(self, conta: Conta, chave_idempotencia: str, hash_da_requisicao: str) -> Transacao:
         transacao_anterior = self.transacao_repository.get_by_idempotency_key(conta, chave_idempotencia)
 
@@ -159,25 +204,52 @@ class TransacaoController(BaseController):
         if ultimo_pagamento is not None and pago_em < ultimo_pagamento:
             raise InvalidPagoEm("pago_em", pago_em.isoformat())
 
-    def _parcela(self, natureza: str, valor_centavos: int) -> dict:
-        return {"natureza": natureza, "valor_centavos": valor_centavos, "item": None}
+    def _check_saldos_do_estorno(self, conta: Conta, parcelas: list) -> None:
+        variacao_disponivel, _variacao_reservado = self._variacoes_dos_saldos(parcelas)
 
-    def _lancar(self, transacao: Transacao, conta: Conta, parcelas: list) -> None:
+        if conta.saldo_disponivel + variacao_disponivel < 0:
+            raise InsufficientSaldoDisponivel(-variacao_disponivel, conta.saldo_disponivel)
+
+        for natureza in NATUREZAS_DO_RESERVADO:
+            variacao_da_natureza = 0
+            for parcela in parcelas:
+                if parcela["natureza"] == natureza:
+                    variacao_da_natureza = variacao_da_natureza + parcela["valor_centavos"]
+
+            reservado_da_natureza = self.lancamento_repository.sum_by_natureza(conta, natureza)
+
+            if reservado_da_natureza + variacao_da_natureza < 0:
+                raise InsufficientSaldoReservado(natureza, -variacao_da_natureza, reservado_da_natureza)
+
+    def _parcela(self, natureza: str, valor_centavos: int, item_cobranca_id: int = None) -> dict:
+        return {"natureza": natureza, "valor_centavos": valor_centavos, "item_cobranca_id": item_cobranca_id}
+
+    def _variacoes_dos_saldos(self, parcelas: list) -> tuple:
         variacao_disponivel = 0
         variacao_reservado = 0
         for parcela in parcelas:
-            self.lancamento_repository.create(
-                transacao, conta, parcela["natureza"], parcela["valor_centavos"], parcela["item"]
-            )
-
             if parcela["natureza"] in NATUREZAS_DO_RESERVADO:
                 variacao_reservado = variacao_reservado + parcela["valor_centavos"]
             else:
                 variacao_disponivel = variacao_disponivel + parcela["valor_centavos"]
 
+        return variacao_disponivel, variacao_reservado
+
+    def _lancar(self, transacao: Transacao, conta: Conta, parcelas: list) -> None:
+        for parcela in parcelas:
+            self.lancamento_repository.create(
+                transacao, conta, parcela["natureza"], parcela["valor_centavos"], parcela["item_cobranca_id"]
+            )
+
+        variacao_disponivel, variacao_reservado = self._variacoes_dos_saldos(parcelas)
         self.conta_repository.update_saldos(conta, variacao_disponivel, variacao_reservado)
 
     def _guardar_resultado(self, transacao: Transacao, resultado: dict) -> None:
         self.transacao_repository.set_resultado(transacao, resultado)
 
-        self._flush_or_raise({Transacao.CONTA_IDEMPOTENCIA_UNIQUE_CONSTRAINT: ReusedIdempotencyKey})
+        self._flush_or_raise(
+            {
+                Transacao.CONTA_IDEMPOTENCIA_UNIQUE_CONSTRAINT: ReusedIdempotencyKey,
+                Transacao.ESTORNADA_UNIQUE_CONSTRAINT: TransacaoNotEstornavel,
+            }
+        )

@@ -255,14 +255,47 @@ class ReusedIdempotencyKey(QIException):
         super().__init__(title, self.code, http_status, description, translation)
 
 
+class NotFoundTransacao(QIException):
+    code = "QIT001023"
+
+    def __init__(self, transacao_chave) -> None:
+        title = "Transaction not found"
+        http_status = 404
+        description = f"Transaction with key {transacao_chave} was not found."
+        translation = "A transação informada não foi encontrada."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class TransacaoNotEstornavel(QIException):
+    code = "QIT001024"
+
+    def __init__(self) -> None:
+        title = "Transaction cannot be reversed"
+        http_status = 409
+        description = "The transaction was already reversed or is itself a reversal."
+        translation = "A transação já foi estornada ou é ela mesma um estorno."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class NotLastRecebimento(QIException):
+    code = "QIT001028"
+
+    def __init__(self) -> None:
+        title = "Later payment not reversed"
+        http_status = 409
+        description = "The charge has a later payment that was not reversed; reverse the most recent one first."
+        translation = "A cobrança tem um recebimento posterior não estornado; estorne primeiro o mais recente."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
 class InvalidPagoEm(QIException):
     code = "QIT001027"
 
     def __init__(self, field, text) -> None:
         title = "Payment date out of order"
         http_status = 422
-        description = f"The {field} {text} is in the future or before the last payment of the charge."
-        translation = "A data está no futuro ou é anterior a um recebimento já registrado na cobrança."
+        description = f"The {field} {text} is in the future or before the last non-reversed payment of the charge."
+        translation = "A data está no futuro ou é anterior a um recebimento não estornado da cobrança."
         super().__init__(title, self.code, http_status, description, translation)
 
 

@@ -35,6 +35,13 @@ class TransacaoResource:
 
         return self._response(repasse, created)
 
+    @SchemaHandler.validate_idempotency_key
+    def on_post_estorno(self, transacao_chave: str, request: Request) -> JSONResponse:
+        controller = TransacaoController()
+        estorno, created = controller.estornar(transacao_chave, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+
+        return self._response(estorno, created)
+
     def _response(self, resultado: dict, created: bool) -> JSONResponse:
         if created:
             status_code = http_status.HTTP_201_CREATED

@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import func
+from sqlalchemy import exists, func
+from sqlalchemy.orm import aliased
 
 from database import Context
-from models import Cobranca, Conta, ItemCobranca, Lancamento, Transacao
+from models import Cobranca, Conta, Lancamento, Transacao
 
 
 class LancamentoRepository:
@@ -12,7 +13,7 @@ class LancamentoRepository:
         self.session = context.db_session
 
     def create(
-        self, transacao: Transacao, conta: Conta, natureza: str, valor_centavos: int, item: ItemCobranca
+        self, transacao: Transacao, conta: Conta, natureza: str, valor_centavos: int, item_cobranca_id: int
     ) -> Lancamento:
         lancamento = Lancamento()
 
@@ -21,18 +22,30 @@ class LancamentoRepository:
         lancamento.conta_id = conta.id
         lancamento.natureza = natureza
         lancamento.valor_centavos = valor_centavos
-
-        if item is not None:
-            lancamento.item_cobranca_id = item.id
+        lancamento.item_cobranca_id = item_cobranca_id
 
         self.session.add(lancamento)
         return lancamento
 
+    def list_by_transacao(self, transacao: Transacao) -> list:
+        return (
+            self.session.query(Lancamento)
+            .filter(Lancamento.transacao_id == transacao.id)
+            .order_by(Lancamento.id)
+            .all()
+        )
+
     def list_pagamentos_da_cobranca(self, cobranca: Cobranca) -> list:
+        estorno = aliased(Transacao)
+
         return (
             self.session.query(Lancamento, Transacao.pago_em)
             .join(Transacao, Lancamento.transacao_id == Transacao.id)
-            .filter(Transacao.cobranca_id == cobranca.id, Transacao.tipo == Transacao.TIPO_RECEBIMENTO)
+            .filter(
+                Transacao.cobranca_id == cobranca.id,
+                Transacao.tipo == Transacao.TIPO_RECEBIMENTO,
+                ~exists().where(estorno.transacao_estornada_id == Transacao.id),
+            )
             .order_by(Transacao.pago_em, Lancamento.id)
             .all()
         )
