@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
 SAO_PAULO = ZoneInfo("America/Sao_Paulo")
@@ -21,3 +21,7 @@ def today_in_sao_paulo() -> date:
 
 def date_in_sao_paulo(moment: datetime) -> date:
     return moment.astimezone(SAO_PAULO).date()
+
+
+def format_moment(moment: datetime) -> str:
+    return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

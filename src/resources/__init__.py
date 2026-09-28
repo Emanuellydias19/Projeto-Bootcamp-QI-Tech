@@ -3,3 +3,4 @@ from resources.sample_entity import SampleEntityResource
 from resources.proprietario import ProprietarioResource
 from resources.conta import ContaResource
 from resources.cobranca import CobrancaResource
+from resources.transacao import TransacaoResource

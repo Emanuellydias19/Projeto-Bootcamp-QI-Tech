@@ -200,6 +200,50 @@ class DuplicatedCobranca(QIException):
         super().__init__(title, self.code, http_status, description, translation)
 
 
+class CobrancaQuitada(QIException):
+    code = "QIT001017"
+
+    def __init__(self, cobranca_chave) -> None:
+        title = "Charge already settled"
+        http_status = 409
+        description = f"The charge {cobranca_chave} is already settled and does not accept new items."
+        translation = "A cobrança já está quitada e não aceita novos itens; lance o item na competência seguinte."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class ValorAboveDevido(QIException):
+    code = "QIT001019"
+
+    def __init__(self, valor_centavos, total_devido_centavos) -> None:
+        title = "Amount above what is owed"
+        http_status = 422
+        description = f"The amount {valor_centavos} is above the {total_devido_centavos} owed on the payment date."
+        translation = "O valor recebido é maior que o devido na data do pagamento."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class ReusedIdempotencyKey(QIException):
+    code = "QIT001022"
+
+    def __init__(self) -> None:
+        title = "Idempotency key already used"
+        http_status = 409
+        description = "The Idempotency-Key was already used with another request."
+        translation = "A chave de idempotência já foi usada em outra requisição."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class InvalidPagoEm(QIException):
+    code = "QIT001027"
+
+    def __init__(self, field, text) -> None:
+        title = "Payment date out of order"
+        http_status = 422
+        description = f"The {field} {text} is in the future or before the last payment of the charge."
+        translation = "A data está no futuro ou é anterior a um recebimento já registrado na cobrança."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
 class InvalidValor(QIException):
     code = "QIT001018"
 

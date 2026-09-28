@@ -2,7 +2,7 @@ from controllers.base_controller import BaseController
 from dtos import ContaDTO
 from errors import DuplicatedConta, InvalidBps, NotFoundConta, NotFoundPoliticaImputacao, NotFoundProprietario
 from models import Conta
-from repositories import ContaRepository, PoliticaImputacaoRepository, ProprietarioRepository
+from repositories import ContaRepository, LancamentoRepository, PoliticaImputacaoRepository, ProprietarioRepository
 
 BPS_FIELDS = ["taxa_administracao_bps", "multa_bps", "juros_mensal_bps"]
 MINIMUM_BPS = 0
@@ -15,6 +15,7 @@ class ContaController(BaseController):
         self.conta_repository = ContaRepository(self.context)
         self.proprietario_repository = ProprietarioRepository(self.context)
         self.politica_imputacao_repository = PoliticaImputacaoRepository(self.context)
+        self.lancamento_repository = LancamentoRepository(self.context)
 
     def create(self, conta_data: dict) -> dict:
         self.logger.debug("Abrindo uma nova conta")
@@ -42,5 +43,6 @@ class ContaController(BaseController):
 
     def get_saldo(self, conta_chave: str) -> dict:
         conta = self._get_or_raise(self.conta_repository, conta_chave, NotFoundConta)
+        ultimo_lancamento_em = self.lancamento_repository.get_ultimo_criado_em(conta)
 
-        return ContaDTO.saldo_to_dict(conta)
+        return ContaDTO.saldo_to_dict(conta, ultimo_lancamento_em)

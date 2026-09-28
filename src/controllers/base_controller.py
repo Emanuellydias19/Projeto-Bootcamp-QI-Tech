@@ -1,10 +1,13 @@
 from abc import ABCMeta
+from datetime import date
 
 from sqlalchemy.exc import IntegrityError
 
 from database import get_context
+from errors import InvalidDate, InvalidValor
 from models.base import Base
 from utils.chave import is_valid_chave
+from utils.dates import parse_date
 from utils.logger import get_logger
 
 
@@ -48,3 +51,15 @@ class BaseController(metaclass=ABCMeta):
             raise not_found_error(chave)
 
         return entity
+
+    def _parse_date_or_raise(self, field: str, text: str) -> date:
+        parsed_date = parse_date(text)
+
+        if parsed_date is None:
+            raise InvalidDate(field, text)
+
+        return parsed_date
+
+    def _check_valor(self, valor_centavos: int) -> None:
+        if valor_centavos <= 0:
+            raise InvalidValor(valor_centavos)

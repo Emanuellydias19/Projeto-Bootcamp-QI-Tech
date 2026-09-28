@@ -184,11 +184,11 @@ Proprietário
                    ├── é regida por ──> Política de imputação (versionada)
                    │
                    ├── tem ──> Cobrança (uma por competência)
-                   │              └── tem ──> Itens (um por natureza)
+                   │              └── tem ──> Itens (aluguel, condomínio, IPTU, despesa extra)
                    │
                    └── movimenta ──> Transação (recebimento, encargo, repasse, estorno)
                                         │
-                                        └── compõe ──> Lançamentos (um por natureza)
+                                        └── compõe ──> Lançamentos (cada um com uma natureza)
 ```
 
 Perguntas a decidir:
@@ -512,7 +512,7 @@ Idempotency-Key: 7f3c2a9e-2c1d-4b8e-9a51-0e6d3f1b2c44
 | Mesma chave e mesma requisição: rota, chave do caminho e corpo (reenvio após timeout) | **200**, com o resultado original e sem novo efeito |
 | Mesma chave, requisição diferente: outra rota, outra chave no caminho ou outro corpo (DD18) | **409**, chave reutilizada |
 
-Sem o header, ou com ele vazio, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32).
+Sem o header, com ele vazio ou com mais de 255 caracteres, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32 e DD32).
 
 #### Valores e formatos
 
@@ -549,7 +549,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 
 | Código | HTTP | Quando acontece |
 | --- | ---: | --- |
-| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` acima de 50, `cursor` que não é um lançamento da conta (DD27) ou `Idempotency-Key` ausente (projeto base) |
+| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` acima de 50, `cursor` que não é um lançamento da conta (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
 | `QIT000002` | 403 | sem o `INTERNAL-TOKEN`, ou com o valor errado (projeto base) |
 | `QIT001008` | 422 | documento com o formato certo e os dígitos verificadores errados |
 | `QIT001009` | 409 | documento já cadastrado |
@@ -570,7 +570,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 | `QIT001024` | 409 | transação já estornada, ou que é ela mesma um estorno |
 | `QIT001025` | 422 | data ou competência com o formato certo que não existe no calendário (por exemplo, `2026-02-30` ou `2026-13`, DD31) |
 | `QIT001026` | 422 | repasse com valor bruto maior que zero e menor ou igual à taxa pendente (T40 e DD25) |
-| `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento já registrado na cobrança (DD21) |
+| `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento já registrado na cobrança; ou, na consulta da cobrança, `data` anterior a esse recebimento (DD21) |
 
 Os demais erros gerais (`QIT000404`, `QIT000405` e `QIT000500`) seguem o projeto base.
 
@@ -764,7 +764,7 @@ POST /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37/recebimentos
 }
 ```
 
-**Exemplo de resposta 201:** o rateio aplicado, na ordem da política (juros, multa, encargos, aluguel, despesa extra), e o que ficou em aberto na cobrança.
+**Exemplo de resposta 201:** o rateio aplicado, na ordem da política (juros, multa, encargos, aluguel, despesa extra), com uma linha por lançamento (DD32), e o que ficou em aberto na cobrança.
 
 ```json
 {
@@ -802,7 +802,7 @@ POST /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37/recebimentos
 | Valor acima do devido na data do pagamento (aberto + multa + juros) | 422 | `QIT001019` |
 | `pago_em` inexistente no calendário | 422 | `QIT001025` |
 | `pago_em` no futuro (data de São Paulo), ou anterior a um recebimento já registrado na cobrança (DD21 e DD22) | 422 | `QIT001027` |
-| `Idempotency-Key` ausente ou vazia | 400 | `QIT000001` (projeto base) |
+| `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) | 400 | `QIT000001` (projeto base) |
 
 > **Sobre o 422 do excedente (Time, T19):** ele recusa o **registro** de um recebimento acima do devido na data do pagamento (o aberto mais a multa e os juros, T35). Não é uma afirmação sobre o dinheiro: a administradora pode ter recebido R$ 2.100 na conta bancária dela. A ORCA não controla o dinheiro físico, controla o registro da posição. Na Fase 1, o excedente fica fora do sistema e é tratado pelo operador.
 >
@@ -1286,7 +1286,7 @@ GET /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37?data=2026-10-05
 
 **Quais situações bloqueiam a operação?**
 
-> Cobrança inexistente.
+> Cobrança inexistente, ou `data` anterior a um recebimento já registrado na cobrança (DD21): a posição antes de um pagamento já lançado não é reconstruída.
 
 **Quais erros podem acontecer?**
 
@@ -1295,6 +1295,7 @@ GET /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37?data=2026-10-05
 | Cobrança inexistente (ou não é sua cobrança) | 404 | `QIT001015` |
 | `data` fora do formato | 400 | `QIT000001` (projeto base) |
 | `data` inexistente no calendário | 422 | `QIT001025` |
+| `data` anterior a um recebimento já registrado na cobrança (DD21) | 422 | `QIT001027` |
 
 > **Multa e juros:** não entram no valor em aberto dos itens, porque dependem da data do pagamento (RN14). Por isso a rota os calcula para a `data` pedida, pela fórmula da DD20, e o total devido na data é o limite do recebimento (T35). No exemplo, o pagamento é em dia, então os dois são zero.
 
@@ -1352,7 +1353,7 @@ POST /transacoes/f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13/estornos
 | Situação | HTTP | Código de erro |
 | --- | ---: | --- |
 | Repetição idêntica (não é erro) | 200 | não se aplica |
-| `Idempotency-Key` ausente ou vazia | 400 | `QIT000001` (projeto base) |
+| `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) | 400 | `QIT000001` (projeto base) |
 | Transação inexistente (ou não é sua) | 404 | `QIT001023` |
 | Transação já estornada, ou que é ela mesma um estorno | 409 | `QIT001024` |
 | Desfazer deixaria o saldo disponível negativo | 409 | `QIT001020` |
@@ -1440,7 +1441,7 @@ Operador ──> POST /cobrancas/{chave}/recebimentos
     ↓
 9. imputa o valor pela política vigente: juros, multa, condomínio, IPTU, aluguel, despesa extra (DD24)
     ↓
-10. INSERT transacao (chave_idempotencia UNIQUE por conta, hash_requisicao, pago_em, cobranca_id) e INSERT lancamentos (um por natureza)
+10. INSERT transacao (chave_idempotencia UNIQUE por conta, hash_requisicao, pago_em, cobranca_id) e INSERT lancamentos (juros, multa e um por item que recebeu valor, DD32)
     ↓
 11. UPDATE saldo_disponivel e saldo_reservado
     ↓
@@ -1505,7 +1506,7 @@ Com a conta travada, procura a transação com a mesma Idempotency-Key
 > * **"Verificar saldo":** o valor bruto precisa caber no **saldo disponível** (RN11).
 > * **"Calcular tarifa":** a taxa pendente sobre o aluguel efetivamente quitado (T27 e T38): `max(0, ⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida))` (DD26); líquido = `valor_bruto − taxa` (T17).
 > * **"Registrar movimentações":** dois lançamentos, `taxa` e `repasse`, que somados dão o valor bruto (RN16).
-> * **Idempotência:** a consulta pela chave acontece com a conta travada (DD17), então nenhuma outra requisição da mesma conta entra no meio. A restrição UNIQUE continua como rede: se ainda assim o INSERT a violar, a violação é capturada e traduzida em 200 ou 409, nunca em 500 (RFC, T03, DD15 e DD18).
+> * **Idempotência:** a consulta pela chave acontece com a conta travada (DD17), então nenhuma outra requisição da mesma conta entra no meio. A restrição UNIQUE continua como rede: se ainda assim o INSERT a violar, a violação é capturada e traduzida em 409 (`QIT001022`), nunca em 500 (RFC, T03, DD15 e DD18).
 
 ---
 
@@ -1619,7 +1620,7 @@ Exemplos:
 | Reservado da natureza suficiente para o encargo (RN11) | Controller, somando os lançamentos da natureza com a conta travada |
 | Item novo só em cobrança não quitada (RN15) | Controller, na inclusão de item (`POST /cobrancas/{chave}/itens`) |
 | Estorno só de transação não estornada e que não é um estorno (DD04) | Controller, com a conta travada, e o banco, com a restrição UNIQUE em `transacao_estornada_id` |
-| Unicidade de documento, de conta por imóvel e de chave de idempotência (RN08, RN09, RN03) | Banco, com restrições UNIQUE; o controller só traduz a violação em 409 ou 200 |
+| Unicidade de documento, de conta por imóvel e de chave de idempotência (RN08, RN09, RN03) | Banco, com restrições UNIQUE; o controller só traduz a violação em 409. A repetição da mesma requisição é respondida antes, com 200, pela consulta com a conta travada (DD18) |
 | Ordem de imputação (RN05) | Controller, lendo a política versionada da conta |
 | Cursor do extrato é um lançamento da conta (DD27) | Controller, no extrato; senão, 400 (`QIT000001`) |
 | Recurso pertence ao solicitante | Controller; recurso de outro dono responde 404, igual ao inexistente (T33). Na Fase 1, com o `INTERNAL-TOKEN` único, não há dono de quem chama |
@@ -1818,7 +1819,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, e a DD31 foi derivada na implementação, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, e a DD31 e a DD32 foram derivadas na implementação, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1898,7 +1899,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD12 | **Arquitetura e testes da implementação de referência da QI Tech:** rotas com `add_api_route` no `app.py`; pastas `resources`, `schemas`, `controllers`, `repositories`, `models`, `dtos`, `errors` e `utils`, além dos `middlewares` da base; sem camada de domínio, service, repository genérico ou factory. Desenvolvimento em TDD, com testes de integração por HTTP que não importam `src/` | T34; regra R1 da Aula 3 (teste de caixa-preta); `bootcamp-biblioteca-api` |
 | DD13 | **Tipos no banco:** a `chave` em `CHAR(36)`, com UUID v4 gerado na aplicação (menos a da política padrão, fixa no `database.sql`, T41); `BIGSERIAL` nos ids; `BIGINT` nos centavos; `TIMESTAMPTZ` nos instantes (`criado_em`, `vigente_desde`) e `DATE` nas datas de calendário (`vencimento`, `pago_em`); o `documento` em `VARCHAR(18)`, o tamanho do CNPJ com máscara | Base: `CHAR(36)` e `uuid4` no repository. Com o tipo `UUID` do Postgres, uma chave malformada no caminho daria 500, e não o 404 da DD09; T08 e T09 |
 | DD14 | **Nomes no código:** o domínio em português, igual ao contrato (`Conta`, `saldo_reservado`, `receber`, `repassar`); os nomes técnicos no estilo da base (`on_post`, `create`, `get_by_chave_for_update`, `obj_to_dict`) | Seção 7 (contrato em português); padrão de nomes da base |
-| DD15 | **A unicidade é decidida pelo banco:** cada restrição UNIQUE tem nome, e a violação (`IntegrityError`) é traduzida para o erro do catálogo (409), com `flush` antes do commit quando é preciso vê-la antes; a consulta prévia só serve para responder mais cedo. A violação da UNIQUE da `Idempotency-Key` segue a DD18 (200 ou 409 `QIT001022`) | T03 ("o banco decide") e 8.4; na base, duas requisições iguais ao mesmo tempo terminam em 500 |
+| DD15 | **A unicidade é decidida pelo banco:** cada restrição UNIQUE tem nome, e a violação (`IntegrityError`) é traduzida para o erro do catálogo (409), com `flush` antes do commit quando é preciso vê-la antes; a consulta prévia só serve para responder mais cedo. A UNIQUE da `Idempotency-Key` fica como rede: com a conta travada, a repetição é respondida antes pela DD18, e a violação, se ainda assim acontecer, responde 409 (`QIT001022`) | T03 ("o banco decide") e 8.4; na base, duas requisições iguais ao mesmo tempo terminam em 500 |
 | DD16 | **A trava da conta é a primeira leitura dela na transação** (`SELECT ... FOR UPDATE`); cada operação trava uma conta só, e toda regra que depende do saldo é conferida depois da trava | T02; 3.3 (o repasse não tem conta de destino); na base, um objeto lido antes da trava volta com o valor antigo |
 | DD17 | **As quatro operações que movem dinheiro** (recebimento, pagamento de encargo, repasse e estorno) ficam no `transacao_controller.py` e seguem o mesmo roteiro: conta travada, idempotência conferida com a conta travada, regras de negócio, lançamentos e saldos, e o commit como última operação. Nenhuma escrita acontece antes das regras, e qualquer falha desfaz tudo | T22, T24 e T37 (toda operação de dinheiro é uma transação); T34; a idempotência vem depois da trava para que uma repetição concorrente espere a primeira e receba o resultado dela (DD29) |
 | DD18 | **Idempotência com o hash da requisição:** `transacao.hash_requisicao` (`CHAR(64)`) guarda o SHA-256 da rota, da chave do caminho e do corpo em JSON canônico. Mesma chave com hash igual devolve o resultado guardado (200); com hash diferente, 409 (`QIT001022`). Uma operação que falha é desfeita inteira, inclusive a linha de idempotência, e um reenvio com a mesma chave executa de novo | T03 e 8.4 (comparar a requisição); a rota e a chave do caminho entram no hash porque o estorno não tem corpo e a mesma chave, na mesma conta, pode chegar por outra rota; atomicidade (3.3 e 8.3) |
@@ -1915,6 +1916,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD29 | **Testes de concorrência nas operações de dinheiro:** requisições em paralelo por HTTP provam que repasses simultâneos não deixam saldo negativo nem divergência entre saldo e extrato, e que duas requisições com a mesma `Idempotency-Key` produzem um efeito só | T01, T02 e T03; a base e a referência não têm teste de concorrência |
 | DD30 | **Código sem comentários:** a intenção fica nos nomes, na estrutura e nos testes, e as decisões ficam neste documento e na descrição dos pull requests | Decisão de estilo do time para a implementação |
 | DD31 | *Derivado, aguarda revisão:* **datas de referência dos encargos e competência.** Os itens enviados na criação da cobrança usam o vencimento como data de referência da multa e dos juros, mesmo que a cobrança seja registrada depois dele. Só o item incluído depois, pela 7.2.9, usa a data da inclusão (T42), que é a data de São Paulo do `criado_em` do item (DD22): a multa incide se o pagamento for depois dessa data, e os juros correm a partir dela. A competência com mês fora de 01 a 12 responde 422 (`QIT001025`), como uma data que não existe (DD10) | T42, DD10, DD20 e DD22 |
+| DD32 | *Derivado, aguarda revisão:* **detalhes do recebimento.** (a) A `Idempotency-Key` tem de 1 a 255 caracteres; ausente, vazia ou maior responde 400 (`QIT000001`), conferida na camada de schema. (b) O `rateio` da resposta tem uma linha por lançamento, na ordem da imputação: juros, multa e uma linha por item que recebeu valor, de modo que duas despesas extras aparecem separadas; entre itens da mesma natureza, o incluído primeiro é pago primeiro. (c) O `em_aberto` inclui a multa e os juros que o recebimento não cobriu (T43), na ordem da política. (d) Os juros acumulam por trechos entre as datas dos recebimentos, sobre o aberto de cada trecho, e truncam uma vez sobre o total (DD20). (e) Data e hora nas respostas, como `ultimo_lancamento_em`, saem em UTC no formato `AAAA-MM-DDTHH:MM:SSZ`, como nos exemplos. (f) A inclusão de item (7.2.9) também trava a conta, porque decide pela posição da cobrança se ela está quitada (RN15). Com a conta travada, o recebimento e a inclusão releem os itens da cobrança, para enxergar um item incluído enquanto esperavam a trava. (g) Um item incluído depois da data do pagamento não entra na posição dessa data (T42): um recebimento com `pago_em` anterior à inclusão não é imputado nele, e a consulta da 7.2.10 com essa `data` não o mostra. (h) "Mesmo corpo" é o mesmo objeto JSON: a ordem das chaves pode mudar sem virar outra requisição. A restrição UNIQUE da chave de idempotência não é alcançada com a conta travada; se ainda assim disparar, responde 409 (`QIT001022`), nunca 500 | T03, T42, T43, DD16, DD18, DD20 e exemplos da seção 7 |
 
 ---
 

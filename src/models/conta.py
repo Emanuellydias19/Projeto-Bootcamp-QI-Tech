@@ -1,4 +1,5 @@
 from sqlalchemy import CHAR, BigInteger, CheckConstraint, Column, DateTime, ForeignKey, Integer, Text, UniqueConstraint, func
+from sqlalchemy.orm import relationship
 
 from models.base import Base
 from models.politica_imputacao import PoliticaImputacao
@@ -21,6 +22,8 @@ class Conta(Base):
     juros_mensal_bps = Column(Integer, nullable=False)
     politica_id = Column(BigInteger, ForeignKey(PoliticaImputacao.id, name="fk_conta_politica_imputacao"), nullable=False)
     criado_em = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    politica = relationship(PoliticaImputacao)
 
     __table_args__ = (
         UniqueConstraint("chave", name="uq_conta_chave"),

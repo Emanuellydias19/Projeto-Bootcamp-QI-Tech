@@ -34,3 +34,6 @@ class CobrancaRepository:
 
     def get_by_chave(self, chave: str) -> Cobranca:
         return self.session.query(Cobranca).filter(Cobranca.chave == chave).first()
+
+    def refresh_itens(self, cobranca: Cobranca) -> None:
+        self.session.refresh(cobranca, ["itens"])

@@ -106,3 +106,46 @@ CREATE TABLE item_cobranca(
 );
 
 CREATE INDEX ix_item_cobranca_cobranca_id ON item_cobranca(cobranca_id);
+
+CREATE TABLE transacao(
+    id                              BIGSERIAL PRIMARY KEY,
+    chave                           CHAR(36) NOT NULL,
+    conta_id                        BIGINT NOT NULL,
+    tipo                            TEXT NOT NULL,
+    cobranca_id                     BIGINT,
+    chave_idempotencia              TEXT NOT NULL,
+    hash_requisicao                 CHAR(64) NOT NULL,
+    resultado                       JSONB NOT NULL,
+    pago_em                         DATE,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT fk_transacao_conta FOREIGN KEY (conta_id) REFERENCES conta(id),
+    CONSTRAINT fk_transacao_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobranca(id),
+    CONSTRAINT uq_transacao_chave UNIQUE(chave),
+    CONSTRAINT uq_transacao_conta_idempotencia UNIQUE(conta_id, chave_idempotencia),
+    CONSTRAINT ck_transacao_tipo CHECK (tipo IN ('recebimento', 'encargo', 'repasse', 'estorno')),
+    CONSTRAINT ck_transacao_pago_em CHECK ((tipo = 'recebimento') = (pago_em IS NOT NULL)),
+    CONSTRAINT ck_transacao_cobranca CHECK ((tipo = 'recebimento') = (cobranca_id IS NOT NULL))
+);
+
+CREATE INDEX ix_transacao_cobranca_id ON transacao(cobranca_id);
+
+CREATE TABLE lancamento(
+    id                              BIGSERIAL PRIMARY KEY,
+    chave                           CHAR(36) NOT NULL,
+    transacao_id                    BIGINT NOT NULL,
+    conta_id                        BIGINT NOT NULL,
+    natureza                        TEXT NOT NULL,
+    valor_centavos                  BIGINT NOT NULL,
+    item_cobranca_id                BIGINT,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT fk_lancamento_transacao FOREIGN KEY (transacao_id) REFERENCES transacao(id),
+    CONSTRAINT fk_lancamento_conta FOREIGN KEY (conta_id) REFERENCES conta(id),
+    CONSTRAINT fk_lancamento_item_cobranca FOREIGN KEY (item_cobranca_id) REFERENCES item_cobranca(id),
+    CONSTRAINT uq_lancamento_chave UNIQUE(chave),
+    CONSTRAINT ck_lancamento_natureza CHECK (natureza IN ('aluguel', 'condominio', 'iptu', 'despesa_extra', 'multa', 'juros', 'taxa', 'repasse')),
+    CONSTRAINT ck_lancamento_valor CHECK (valor_centavos <> 0)
+);
+
+CREATE INDEX ix_lancamento_conta_id ON lancamento(conta_id);
+CREATE INDEX ix_lancamento_transacao_id ON lancamento(transacao_id);
+CREATE INDEX ix_lancamento_item_cobranca_id ON lancamento(item_cobranca_id);

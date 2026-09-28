@@ -6,3 +6,5 @@ from models.politica_imputacao import PoliticaImputacao
 from models.conta import Conta
 from models.cobranca import Cobranca
 from models.item_cobranca import ItemCobranca
+from models.transacao import Transacao
+from models.lancamento import Lancamento

@@ -3,3 +3,5 @@ from repositories.proprietario_repository import ProprietarioRepository
 from repositories.politica_imputacao_repository import PoliticaImputacaoRepository
 from repositories.conta_repository import ContaRepository
 from repositories.cobranca_repository import CobrancaRepository
+from repositories.transacao_repository import TransacaoRepository
+from repositories.lancamento_repository import LancamentoRepository

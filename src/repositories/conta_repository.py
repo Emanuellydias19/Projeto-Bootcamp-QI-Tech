@@ -26,3 +26,10 @@ class ContaRepository:
 
     def get_by_chave(self, chave: str) -> Conta:
         return self.session.query(Conta).filter(Conta.chave == chave).first()
+
+    def get_by_id_for_update(self, conta_id: int) -> Conta:
+        return self.session.query(Conta).filter(Conta.id == conta_id).populate_existing().with_for_update().one()
+
+    def update_saldos(self, conta: Conta, variacao_disponivel: int, variacao_reservado: int) -> None:
+        conta.saldo_disponivel = conta.saldo_disponivel + variacao_disponivel
+        conta.saldo_reservado = conta.saldo_reservado + variacao_reservado

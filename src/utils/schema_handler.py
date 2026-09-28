@@ -6,6 +6,7 @@ from jsonschema import Draft202012Validator, RefResolver, ValidationError, valid
 
 from constants import SCHEMA_PATH
 from errors import InvalidSchema
+from utils.idempotency import IDEMPOTENCY_KEY_HEADER, MAXIMUM_IDEMPOTENCY_KEY_LENGTH
 
 
 def is_integer_without_decimal_places(checker, instance) -> bool:
@@ -176,6 +177,31 @@ class SchemaHandler:
             return wrapper_validate
 
         return decorator_validate
+
+    @staticmethod
+    def validate_idempotency_key(func):
+        @functools.wraps(func)
+        def wrapper_validate(*args, **kwargs):
+            request = kwargs.get("request")
+            if request is None:
+                raise Exception(
+                    f"A rota '{func.__name__}' foi decorada com o validate_idempotency_key, mas "
+                    + "nao tem um parametro chamado 'request'. E de la que sai o header."
+                )
+
+            idempotency_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+
+            if idempotency_key is None or idempotency_key == "":
+                raise InvalidSchema(f"The {IDEMPOTENCY_KEY_HEADER} header is required.")
+
+            if len(idempotency_key) > MAXIMUM_IDEMPOTENCY_KEY_LENGTH:
+                raise InvalidSchema(
+                    f"The {IDEMPOTENCY_KEY_HEADER} header must have at most {MAXIMUM_IDEMPOTENCY_KEY_LENGTH} characters."
+                )
+
+            return func(*args, **kwargs)
+
+        return wrapper_validate
 
 
 def query_params_to_dict(query_params, schema: dict) -> dict:
