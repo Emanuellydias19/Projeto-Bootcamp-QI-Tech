@@ -99,3 +99,25 @@ class InvalidBirthdate(QIException):
         description = f"The birthdate {birthdate} is not a real date."
         translation = "A data de nascimento informada não existe."
         super().__init__(title, self.code, http_status, description, translation)
+
+
+class InvalidDocumento(QIException):
+    code = "QIT001008"
+
+    def __init__(self) -> None:
+        title = "Invalid document"
+        http_status = 422
+        description = "The document check digits do not match a valid CPF or CNPJ."
+        translation = "O documento informado não é um CPF ou CNPJ válido."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class DuplicatedDocumento(QIException):
+    code = "QIT001009"
+
+    def __init__(self) -> None:
+        title = "Document already registered"
+        http_status = 409
+        description = "There is already an owner registered with this document."
+        translation = "Já existe um proprietário cadastrado com este documento."
+        super().__init__(title, self.code, http_status, description, translation)

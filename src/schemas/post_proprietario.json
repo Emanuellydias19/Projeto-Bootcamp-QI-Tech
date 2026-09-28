@@ -1,0 +1,28 @@
+{
+  "title": "PostProprietario",
+  "type": "object",
+  "properties": {
+    "documento": {
+      "type": "string",
+      "oneOf": [
+        {
+          "pattern": "^[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}$",
+          "maxLength": 14
+        },
+        {
+          "pattern": "^[0-9]{2}\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2}$",
+          "maxLength": 18
+        }
+      ]
+    },
+    "nome": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "documento",
+    "nome"
+  ],
+  "additionalProperties": false
+}

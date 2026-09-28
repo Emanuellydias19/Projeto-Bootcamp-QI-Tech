@@ -34,3 +34,13 @@ CREATE TABLE sample_entity_status_event(
     event_datetime                  TIMESTAMP NOT NULL,
     created_at                      TIMESTAMP NOT NULL DEFAULT(NOW())
 );
+
+CREATE TABLE proprietario(
+    id                              BIGSERIAL PRIMARY KEY,
+    chave                           CHAR(36) NOT NULL,
+    documento                       VARCHAR(18) NOT NULL,
+    nome                            TEXT NOT NULL,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT uq_proprietario_chave UNIQUE(chave),
+    CONSTRAINT uq_proprietario_documento UNIQUE(documento)
+);
