@@ -47,3 +47,17 @@ class PayloadGenerator:
     def create_new_status_payload(new_status: str = None) -> dict:
         payload = {"status": new_status}
         return payload
+
+    @staticmethod
+    def create_proprietario_payload(documento: str = None, nome: str = None) -> dict:
+        if documento is None:
+            documento = RandomGenerator.generate_cpf()
+
+        if nome is None:
+            nome = "Maria da Silva"
+
+        payload = {
+            "documento": documento,
+            "nome": nome,
+        }
+        return payload

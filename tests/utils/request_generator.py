@@ -52,3 +52,13 @@ class RequestGenerator:
             "GET", "/sample_entities", headers={"INTERNAL-TOKEN": INTERNAL_TOKEN}, query_params=params
         )
         return response.response_status, response.response_json
+
+    @staticmethod
+    def POST_proprietarios(proprietario_payload: dict) -> tuple:
+        response = ClientRequisition.send(
+            "POST",
+            "/proprietarios",
+            payload=proprietario_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+        )
+        return response.response_status, response.response_json
