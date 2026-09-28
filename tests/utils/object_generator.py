@@ -45,8 +45,10 @@ class ObjectGenerator:
         return response
 
     @staticmethod
-    def create_cobranca(conta_chave: str, vencimento: str = None, itens: list = None) -> dict:
-        cobranca_payload = PayloadGenerator.create_cobranca_payload(vencimento=vencimento, itens=itens)
+    def create_cobranca(conta_chave: str, vencimento: str = None, itens: list = None, competencia: str = None) -> dict:
+        cobranca_payload = PayloadGenerator.create_cobranca_payload(
+            competencia=competencia, vencimento=vencimento, itens=itens
+        )
 
         status, response = RequestGenerator.POST_conta_cobrancas(conta_chave, cobranca_payload)
         assert status == 201

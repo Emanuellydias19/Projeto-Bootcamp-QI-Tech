@@ -1,16 +1,10 @@
-from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import timedelta
 
-from tests.utils import ObjectGenerator, PayloadGenerator, RequestGenerator
+from tests.utils import ObjectGenerator, PayloadGenerator, RequestGenerator, today_in_sao_paulo
 from tests.utils.requisition import ClientRequisition
 
 
 UNKNOWN_CHAVE = "00000000-0000-0000-0000-000000000000"
-SAO_PAULO = ZoneInfo("America/Sao_Paulo")
-
-
-def today_in_sao_paulo() -> date:
-    return datetime.now(SAO_PAULO).date()
 
 
 def new_conta_chave(multa_bps: int = 200, juros_mensal_bps: int = 100) -> str:
@@ -166,6 +160,25 @@ class TestCobrancaGet:
         status, response = RequestGenerator.GET_cobranca(cobranca_chave, {"data": "2026-02-30"})
         assert status == 422
         assert response["code"] == "QIT001025"
+
+    def test_refuses_data_before_the_last_recebimento(self):
+        vencimento = today_in_sao_paulo() - timedelta(days=30)
+        cobranca_chave = ObjectGenerator.create_cobranca(new_conta_chave(), vencimento=vencimento.isoformat())[
+            "cobranca_chave"
+        ]
+        pago_em = vencimento + timedelta(days=10)
+
+        status, _response = RequestGenerator.POST_cobranca_recebimentos(
+            cobranca_chave, PayloadGenerator.create_recebimento_payload(1000, pago_em.isoformat())
+        )
+        assert status == 201
+
+        status, response = RequestGenerator.GET_cobranca(cobranca_chave, {"data": (pago_em - timedelta(days=1)).isoformat()})
+        assert status == 422
+        assert response["code"] == "QIT001027"
+
+        status, _response = RequestGenerator.GET_cobranca(cobranca_chave, {"data": pago_em.isoformat()})
+        assert status == 200
 
     def test_schema_refuses_unknown_query_parameter(self):
         cobranca_chave = ObjectGenerator.create_cobranca(new_conta_chave())["cobranca_chave"]

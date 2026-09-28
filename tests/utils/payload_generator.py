@@ -122,6 +122,14 @@ class PayloadGenerator:
         return payload
 
     @staticmethod
+    def create_recebimento_payload(valor_centavos: int, pago_em: str) -> dict:
+        payload = {
+            "valor_centavos": valor_centavos,
+            "pago_em": pago_em,
+        }
+        return payload
+
+    @staticmethod
     def create_item_payload(natureza: str = None, valor_centavos: int = None) -> dict:
         if natureza is None:
             natureza = "despesa_extra"

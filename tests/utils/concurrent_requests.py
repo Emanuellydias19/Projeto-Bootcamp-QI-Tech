@@ -21,6 +21,23 @@ class ConcurrentRequests:
         return results
 
     @staticmethod
+    def send_different_at_the_same_time(calls: list) -> list:
+        barrier = Barrier(len(calls))
+
+        with ThreadPoolExecutor(max_workers=len(calls)) as executor:
+            futures = []
+            for request_function, arguments in calls:
+                futures.append(
+                    executor.submit(ConcurrentRequests._send_after_barrier, barrier, request_function, arguments)
+                )
+
+        results = []
+        for future in futures:
+            results.append(future.result())
+
+        return results
+
+    @staticmethod
     def _send_after_barrier(barrier: Barrier, request_function, arguments: tuple) -> tuple:
         barrier.wait()
         return request_function(*arguments)

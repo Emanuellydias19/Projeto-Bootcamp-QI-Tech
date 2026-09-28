@@ -1,4 +1,6 @@
-from tests.utils import ObjectGenerator, PayloadGenerator, RequestGenerator
+from datetime import timedelta
+
+from tests.utils import ObjectGenerator, PayloadGenerator, RequestGenerator, today_in_sao_paulo
 from tests.utils.requisition import ClientRequisition
 
 
@@ -70,6 +72,41 @@ class TestCobrancaItem:
             )
             assert status == 400, valor
             assert response["code"] == "QIT000001"
+
+    def test_accepts_item_on_a_parcial_cobranca(self):
+        proprietario_chave = ObjectGenerator.create_proprietario()["proprietario_chave"]
+        conta_chave = ObjectGenerator.create_conta(proprietario_chave)["conta_chave"]
+        vencimento = today_in_sao_paulo() + timedelta(days=5)
+        cobranca_chave = ObjectGenerator.create_cobranca(conta_chave, vencimento=vencimento.isoformat())["cobranca_chave"]
+
+        status, _response = RequestGenerator.POST_cobranca_recebimentos(
+            cobranca_chave, PayloadGenerator.create_recebimento_payload(1000, today_in_sao_paulo().isoformat())
+        )
+        assert status == 201
+
+        status, response = RequestGenerator.POST_cobranca_itens(cobranca_chave, PayloadGenerator.create_item_payload())
+        assert status == 201
+        assert response["itens"][3] == {"natureza": "despesa_extra", "valor_devido_centavos": 8000}
+
+        status, response = RequestGenerator.GET_cobranca(cobranca_chave)
+        assert status == 200
+        assert response["status"] == "parcial"
+        assert response["total_em_aberto_centavos"] == 207000
+
+    def test_refuses_item_on_a_quitada_cobranca(self):
+        proprietario_chave = ObjectGenerator.create_proprietario()["proprietario_chave"]
+        conta_chave = ObjectGenerator.create_conta(proprietario_chave)["conta_chave"]
+        vencimento = today_in_sao_paulo() + timedelta(days=5)
+        cobranca_chave = ObjectGenerator.create_cobranca(conta_chave, vencimento=vencimento.isoformat())["cobranca_chave"]
+
+        status, _response = RequestGenerator.POST_cobranca_recebimentos(
+            cobranca_chave, PayloadGenerator.create_recebimento_payload(200000, today_in_sao_paulo().isoformat())
+        )
+        assert status == 201
+
+        status, response = RequestGenerator.POST_cobranca_itens(cobranca_chave, PayloadGenerator.create_item_payload())
+        assert status == 409
+        assert response["code"] == "QIT001017"
 
     def test_refuses_valor_not_positive(self):
         cobranca_chave = new_cobranca_chave()

@@ -4,3 +4,4 @@ from tests.utils.object_generator import ObjectGenerator
 from tests.utils.payload_generator import PayloadGenerator
 from tests.utils.request_generator import RequestGenerator, INTERNAL_TOKEN, UUID_PATTERN
 from tests.utils.concurrent_requests import ConcurrentRequests
+from tests.utils.dates import today_in_sao_paulo

@@ -1,4 +1,5 @@
 from os import environ
+from uuid import uuid4
 
 from tests.utils.requisition import ClientRequisition, BaseConnectorResponse
 
@@ -100,6 +101,19 @@ class RequestGenerator:
             f"/cobrancas/{cobranca_chave}/itens",
             payload=item_payload,
             headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
+    def POST_cobranca_recebimentos(cobranca_chave: str, recebimento_payload: dict, idempotency_key: str = None) -> tuple:
+        if idempotency_key is None:
+            idempotency_key = str(uuid4())
+
+        response = ClientRequisition.send(
+            "POST",
+            f"/cobrancas/{cobranca_chave}/recebimentos",
+            payload=recebimento_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN, "Idempotency-Key": idempotency_key},
         )
         return response.response_status, response.response_json
 
