@@ -144,6 +144,18 @@ class RequestGenerator:
         return response.response_status, response.response_json
 
     @staticmethod
+    def POST_transacao_estornos(transacao_chave: str, idempotency_key: str = None) -> tuple:
+        if idempotency_key is None:
+            idempotency_key = str(uuid4())
+
+        response = ClientRequisition.send(
+            "POST",
+            f"/transacoes/{transacao_chave}/estornos",
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN, "Idempotency-Key": idempotency_key},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
     def GET_cobranca(cobranca_chave: str, params: dict = None) -> tuple:
         response = ClientRequisition.send(
             "GET",
