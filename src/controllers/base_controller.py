@@ -1,5 +1,7 @@
 from abc import ABCMeta
 
+from sqlalchemy.exc import IntegrityError
+
 from database import get_context
 from utils.logger import get_logger
 
@@ -22,3 +24,14 @@ class BaseController(metaclass=ABCMeta):
         self.context = get_context()
         self.session = self.context.get_or_create_session()
         self.logger = get_logger(class_name)
+
+    def _flush_or_raise(self, errors_by_constraint: dict) -> None:
+        try:
+            self.session.flush()
+        except IntegrityError as error:
+            constraint_name = error.orig.diag.constraint_name
+
+            if constraint_name in errors_by_constraint:
+                raise errors_by_constraint[constraint_name]()
+
+            raise

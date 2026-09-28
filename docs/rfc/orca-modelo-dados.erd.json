@@ -56,7 +56,8 @@
     "indexIds": [
       "1e4f3b2799874d32bc22c",
       "8c3af8d43b7a4368a853e",
-      "d41567ad4a904d30a9b87"
+      "d41567ad4a904d30a9b87",
+      "4d8bfa995e364dec91d70"
     ],
     "memoIds": [
       "7bcc1af076c949bd8d08f"
@@ -461,19 +462,19 @@
         "id": "2dc7d3e6af0940cab653b",
         "tableId": "90830de3bbe744488869b",
         "name": "versao",
-        "comment": "versionada, nunca editada no lugar",
+        "comment": "UNIQUE junto com o nome; versionada, nunca editada no lugar",
         "dataType": "INT",
         "default": "",
-        "options": 12,
+        "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 188,
+          "widthComment": 330,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790617803913,
           "createAt": 1790202745371
         }
       },
@@ -1694,6 +1695,24 @@
           "updateAt": 1790202745371,
           "createAt": 1790202745371
         }
+      },
+      "4d8bfa995e364dec91d70": {
+        "id": "4d8bfa995e364dec91d70",
+        "name": "uq_politica_imputacao_nome_versao",
+        "tableId": "90830de3bbe744488869b",
+        "indexColumnIds": [
+          "8c1c06ac6d654130a21b3",
+          "e0c25714d07549f5b6063"
+        ],
+        "seqIndexColumnIds": [
+          "8c1c06ac6d654130a21b3",
+          "e0c25714d07549f5b6063"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
+        }
       }
     },
     "indexColumnEntities": {
@@ -1755,6 +1774,26 @@
         "meta": {
           "updateAt": 1790202745371,
           "createAt": 1790202745371
+        }
+      },
+      "8c1c06ac6d654130a21b3": {
+        "id": "8c1c06ac6d654130a21b3",
+        "indexId": "4d8bfa995e364dec91d70",
+        "columnId": "dfaeb8ffd9264788bc6cd",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
+        }
+      },
+      "e0c25714d07549f5b6063": {
+        "id": "e0c25714d07549f5b6063",
+        "indexId": "4d8bfa995e364dec91d70",
+        "columnId": "2dc7d3e6af0940cab653b",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
         }
       }
     },

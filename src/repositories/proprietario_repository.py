@@ -17,3 +17,6 @@ class ProprietarioRepository:
 
         self.session.add(proprietario)
         return proprietario
+
+    def get_by_chave(self, chave: str) -> Proprietario:
+        return self.session.query(Proprietario).filter(Proprietario.chave == chave).first()

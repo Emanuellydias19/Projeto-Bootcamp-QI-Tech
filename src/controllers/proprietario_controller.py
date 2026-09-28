@@ -1,5 +1,3 @@
-from sqlalchemy.exc import IntegrityError
-
 from controllers.base_controller import BaseController
 from dtos import ProprietarioDTO
 from errors import DuplicatedDocumento, InvalidDocumento
@@ -23,12 +21,7 @@ class ProprietarioController(BaseController):
 
         proprietario = self.proprietario_repository.create(proprietario_data)
 
-        try:
-            self.session.flush()
-        except IntegrityError as error:
-            if error.orig.diag.constraint_name == Proprietario.DOCUMENTO_UNIQUE_CONSTRAINT:
-                raise DuplicatedDocumento()
-            raise
+        self._flush_or_raise({Proprietario.DOCUMENTO_UNIQUE_CONSTRAINT: DuplicatedDocumento})
 
         proprietario_dto = ProprietarioDTO.only_obj_key(proprietario)
 

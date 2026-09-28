@@ -2,10 +2,20 @@ import functools
 import json
 import os
 
-from jsonschema import RefResolver, ValidationError, validate
+from jsonschema import Draft202012Validator, RefResolver, ValidationError, validate, validators
 
 from constants import SCHEMA_PATH
 from errors import InvalidSchema
+
+
+def is_integer_without_decimal_places(checker, instance) -> bool:
+    return isinstance(instance, int) and not isinstance(instance, bool)
+
+
+StrictIntegerValidator = validators.extend(
+    Draft202012Validator,
+    type_checker=Draft202012Validator.TYPE_CHECKER.redefine("integer", is_integer_without_decimal_places),
+)
 
 
 class SchemaCache:
@@ -108,7 +118,7 @@ class SchemaHandler:
                 resolver = RefResolver(f"file://{SCHEMA_PATH}/", None)
 
                 try:
-                    validate(kwargs["payload"], schema, resolver=resolver)
+                    validate(kwargs["payload"], schema, cls=StrictIntegerValidator, resolver=resolver)
                 except ValidationError as error:
                     raise InvalidSchema(describe_schema_error(error))
 

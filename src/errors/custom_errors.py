@@ -121,3 +121,58 @@ class DuplicatedDocumento(QIException):
         description = "There is already an owner registered with this document."
         translation = "Já existe um proprietário cadastrado com este documento."
         super().__init__(title, self.code, http_status, description, translation)
+
+
+class NotFoundProprietario(QIException):
+    code = "QIT001010"
+
+    def __init__(self, proprietario_chave) -> None:
+        title = "Owner not found"
+        http_status = 404
+        description = f"Owner with key {proprietario_chave} was not found."
+        translation = "O proprietário informado não foi encontrado."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class NotFoundConta(QIException):
+    code = "QIT001011"
+
+    def __init__(self, conta_chave) -> None:
+        title = "Account not found"
+        http_status = 404
+        description = f"Account with key {conta_chave} was not found."
+        translation = "A conta informada não foi encontrada."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class DuplicatedConta(QIException):
+    code = "QIT001012"
+
+    def __init__(self) -> None:
+        title = "Account already opened"
+        http_status = 409
+        description = "There is already an account for this owner and property."
+        translation = "Já existe uma conta para este proprietário e imóvel."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class InvalidBps(QIException):
+    code = "QIT001013"
+
+    def __init__(self, field, minimum_bps, maximum_bps) -> None:
+        title = "Invalid basis points"
+        http_status = 422
+        description = f"The field {field} must be between {minimum_bps} and {maximum_bps} basis points."
+        translation = f"Taxa, multa e juros precisam estar entre {minimum_bps} e {maximum_bps} pontos-base."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class NotFoundPoliticaImputacao(QIException):
+    code = "QIT001014"
+
+    def __init__(self, politica_imputacao_chave) -> None:
+        title = "Allocation policy not found"
+        http_status = 404
+        description = f"Allocation policy with key {politica_imputacao_chave} was not found."
+        translation = "A política de imputação informada não foi encontrada."
+        super().__init__(title, self.code, http_status, description, translation)

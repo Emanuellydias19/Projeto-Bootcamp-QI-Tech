@@ -1394,11 +1394,13 @@ Requisição
     ↓
 Validação de formato (schema)
     ↓
-Proprietário existe? ─── não ──> 404
+Proprietário existe? ─── não ──> 404 (QIT001010)
     ↓ sim
-Taxa entre 0 e 10000 bps? ─── não ──> 422
+Política de imputação existe? ─── não ──> 404 (QIT001014)
     ↓ sim
-INSERT conta (UNIQUE proprietário + imóvel) ─── violou ──> 409
+Taxa, multa e juros entre 0 e 10000 bps? ─── não ──> 422 (QIT001013)
+    ↓ sim
+INSERT conta (UNIQUE proprietário + imóvel) ─── violou ──> 409 (QIT001012)
     ↓
 201 com a chave da conta
 ```
@@ -1570,8 +1572,8 @@ No projeto base, o schema é um arquivo JSON Schema em `src/schemas/`, conferido
 | --- | --- |
 | `documento` | obrigatório; CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base, e dígitos só de `0` a `9` (DD28) |
 | `nome` | obrigatório; texto não vazio |
-| `proprietario_chave` | obrigatório; UUID |
-| `{chave}` (caminho) | UUID da conta, da cobrança ou da transação, conforme a rota (T28); fora do formato, é tratada como inexistente: 404, como na base |
+| `proprietario_chave` | obrigatório; UUID na forma canônica em minúsculo, como a API emite (fora disso, 400) |
+| `{chave}` (caminho) | UUID da conta, da cobrança ou da transação, conforme a rota (T28); fora do formato canônico em minúsculo (inclusive com espaço no fim, que o `CHAR(36)` ignoraria na comparação), é tratada como inexistente: 404, conferido antes de consultar o banco (DD09) |
 | `imovel_referencia` | obrigatório; texto não vazio |
 | `politica_imputacao_chave` | obrigatório; UUID (DD08) |
 | `taxa_administracao_bps`, `multa_bps`, `juros_mensal_bps` | obrigatórios; inteiros sem casa decimal (`1000.0` é recusado, DD28); a faixa de 0 a 10000 é regra de negócio (RN10) |
@@ -1765,7 +1767,7 @@ Politica_imputacao
 - id               bigserial    PK
 - chave            char(36)     UNIQUE, identificador público (DD08)
 - nome             text
-- versao           int          UNIQUE; versionada, nunca editada no lugar
+- versao           int          UNIQUE junto com o nome (nome, versao), para que cada política tenha a sua v1; versionada, nunca editada no lugar (derivado, aguarda revisão)
 - ordem_naturezas  jsonb        a ordem em que o valor recebido quita as naturezas; na v1: juros, multa, condominio, iptu, aluguel, despesa_extra (T39 e DD24)
 - vigente_desde    timestamptz
 ```
