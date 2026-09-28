@@ -1,0 +1,14 @@
+{
+  "title": "PostContaRepasse",
+  "type": "object",
+  "properties": {
+    "valor_centavos": {
+      "type": "integer",
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "valor_centavos"
+  ],
+  "additionalProperties": false
+}

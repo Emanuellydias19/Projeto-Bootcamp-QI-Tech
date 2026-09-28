@@ -27,6 +27,9 @@ class ContaRepository:
     def get_by_chave(self, chave: str) -> Conta:
         return self.session.query(Conta).filter(Conta.chave == chave).first()
 
+    def get_by_chave_for_update(self, chave: str) -> Conta:
+        return self.session.query(Conta).filter(Conta.chave == chave).populate_existing().with_for_update().first()
+
     def get_by_id_for_update(self, conta_id: int) -> Conta:
         return self.session.query(Conta).filter(Conta.id == conta_id).populate_existing().with_for_update().one()
 

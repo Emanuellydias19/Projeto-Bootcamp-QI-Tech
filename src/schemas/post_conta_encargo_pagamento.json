@@ -1,0 +1,22 @@
+{
+  "title": "PostContaEncargoPagamento",
+  "type": "object",
+  "properties": {
+    "natureza": {
+      "type": "string",
+      "enum": [
+        "condominio",
+        "iptu"
+      ]
+    },
+    "valor_centavos": {
+      "type": "integer",
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "natureza",
+    "valor_centavos"
+  ],
+  "additionalProperties": false
+}

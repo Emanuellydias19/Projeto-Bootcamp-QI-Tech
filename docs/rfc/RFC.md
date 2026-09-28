@@ -86,12 +86,12 @@ Quem usa: um **operador da administradora** faz as operações; o **proprietári
 
 Listar somente o que será implementado nesta entrega.
 
-* [ ] Cadastro de cliente
-* [ ] Criação de conta vinculada ao cliente
-* [ ] Registro de transação
-* [ ] Controle de saldo
-* [ ] Transferência
-* [ ] Aplicação de tarifa
+* [x] Cadastro de cliente
+* [x] Criação de conta vinculada ao cliente
+* [x] Registro de transação
+* [x] Controle de saldo
+* [x] Transferência
+* [x] Aplicação de tarifa
 * [ ] Consulta de extrato paginado
 
 > Esta seção deve ser confrontada com o escopo oficial do QI Tech.
@@ -204,7 +204,7 @@ Perguntas a decidir:
 
 * **Mais de uma conta por proprietário?** Sim: uma conta por imóvel. A combinação proprietário e imóvel é única (RFC). Copropriedade, com dois donos no mesmo imóvel, fica fora da Fase 1 (Time).
 * **Conta de um só proprietário?** Sim. A conta aponta para um único proprietário (RFC).
-* **Quantas transações um repasse gera?** Uma transação do tipo `repasse`, com dois lançamentos: a taxa e o repasse (RFC e Time, T16).
+* **Quantas transações um repasse gera?** Uma transação do tipo `repasse`, com dois lançamentos: a taxa e o repasse (RFC e Time, T16). Quando não há taxa pendente, o lançamento da taxa não existe, e o repasse tem um lançamento só (DD34).
 * **Saldo armazenado ou calculado?** Armazenado, em **dois campos** na conta: `saldo_disponivel` e `saldo_reservado`. Eles servem para controle e trava; a composição de cada um é explicada pelos lançamentos (Time, T13).
 * **A tarifa é uma transação?** Não. A tarifa é um **lançamento próprio**, de natureza `taxa`, dentro da transação de repasse (RFC e Time, T05 e T15).
 * **Uma transação pode ser alterada?** Não. Os lançamentos são imutáveis; uma correção é uma nova transação de estorno (RFC e Time, T22).
@@ -475,8 +475,8 @@ As rotas genéricas do escopo (`/clientes`, `/transacoes`, `/transferencias`) fo
 | POST | `/cobrancas/{chave}/itens` | Incluir um item (despesa lançada depois) numa cobrança ainda não quitada | `natureza`, `valor_centavos` | 201 | 404 cobrança; 409 cobrança já quitada |
 | GET | `/cobrancas/{chave}` | Consultar a cobrança: o devido, o pago e o aberto de cada item, e o total devido numa data, com multa e juros | a chave no caminho; query `data` (opcional, DD05) | 200 | 404 cobrança |
 | POST | `/cobrancas/{chave}/recebimentos` | Registrar o pagamento do inquilino e imputar o valor sobre a cobrança | `valor_centavos`, `pago_em`; header `Idempotency-Key` | 201 com o rateio aplicado; 200 na repetição idêntica | 409 mesma chave com corpo diferente; 404 cobrança; 422 valor menor ou igual a zero; 422 valor acima do devido na data do pagamento; 422 `pago_em` no futuro ou anterior a um recebimento já registrado |
-| POST | `/contas/{chave}/encargos/pagamentos` | Pagar condomínio ou IPTU com o reservado daquela natureza | `natureza`, `valor_centavos`; header `Idempotency-Key` | 201; 200 na repetição idêntica | 409 reservado insuficiente; 409 chave repetida com corpo diferente; 404 conta |
-| POST | `/contas/{chave}/repasses` | Reter a taxa e registrar o repasse do líquido ao proprietário (DD11) | `valor_centavos` (bruto); header `Idempotency-Key` | 201 com a taxa e o líquido; 200 na repetição idêntica | 409 disponível insuficiente; 409 chave repetida com corpo diferente; 404 conta |
+| POST | `/contas/{chave}/encargos/pagamentos` | Pagar condomínio ou IPTU com o reservado daquela natureza | `natureza`, `valor_centavos`; header `Idempotency-Key` | 201; 200 na repetição idêntica | 409 reservado da natureza insuficiente; 409 chave repetida com corpo diferente; 404 conta; 422 valor menor ou igual a zero |
+| POST | `/contas/{chave}/repasses` | Reter a taxa e registrar o repasse do líquido ao proprietário (DD11) | `valor_centavos` (bruto); header `Idempotency-Key` | 201 com a taxa e o líquido; 200 na repetição idêntica | 409 disponível insuficiente; 409 chave repetida com corpo diferente; 404 conta; 422 valor menor ou igual a zero; 422 valor bruto menor ou igual à taxa pendente |
 | GET | `/contas/{chave}/extrato` | Listar os lançamentos, do mais recente para o mais antigo | query `cursor`, `limite`, `natureza` | 200 com a página e o `proximo_cursor` | 404 conta; 400 limite acima de 50 |
 | GET | `/contas/{chave}/saldo` | Devolver os saldos e a data do último lançamento | a chave no caminho | 200 | 404 conta |
 | POST | `/transacoes/{chave}/estornos` | Estornar uma transação, com lançamentos de sinal invertido | header `Idempotency-Key` | 201; 200 na repetição idêntica | 404 transação; 409 transação já estornada ou que é um estorno; 409 saldo insuficiente para desfazer; 409 chave repetida com outra transação |
@@ -510,7 +510,8 @@ Idempotency-Key: 7f3c2a9e-2c1d-4b8e-9a51-0e6d3f1b2c44
 | --- | --- |
 | Primeira vez com essa chave | **201**, a operação acontece |
 | Mesma chave e mesma requisição: rota, chave do caminho e corpo (reenvio após timeout) | **200**, com o resultado original e sem novo efeito |
-| Mesma chave, requisição diferente: outra rota, outra chave no caminho ou outro corpo (DD18) | **409**, chave reutilizada |
+| Mesma chave na mesma conta, requisição diferente: outra rota, outra chave no caminho ou outro corpo (DD18) | **409**, chave reutilizada |
+| Mesma chave em outra conta | **201**, é outra operação (a chave é única por conta, T03) |
 
 Sem o header, com ele vazio ou com mais de 255 caracteres, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32 e DD32).
 
@@ -532,12 +533,14 @@ Todo erro segue o formato do projeto base:
 
 ```json
 {
-  "title": "Saldo disponível insuficiente",
-  "description": "O saldo disponível da conta não cobre o valor pedido.",
-  "translation": "Saldo disponível insuficiente.",
+  "title": "Insufficient available balance",
+  "description": "The amount 150001 is above the 150000 available in the account.",
+  "translation": "O saldo disponível da conta não cobre o valor pedido.",
   "code": "QIT001020"
 }
 ```
+
+Como nos erros da base, o `title` e a `description` saem em inglês, e a `translation`, em português.
 
 Toda resposta traz o header `X-Request-ID`, o número de protocolo da requisição (projeto base).
 
@@ -860,7 +863,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/encargos/pagamentos
 
 **Quais regras de negócio são executadas?**
 
-> RN01, RN02, RN03, RN04, RN06, RN07, RN11 e RN16. Com a conta travada, a API soma os lançamentos daquela natureza para saber se o reservado cobre o valor.
+> RN01, RN02, RN03, RN04, RN06, RN07, RN11 e RN16. Com a conta travada, a API soma os lançamentos daquela natureza para saber se o reservado cobre o valor. O valor é pago inteiro ou recusado (DD33).
 
 **Quais situações bloqueiam a operação?**
 
@@ -933,7 +936,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 
 **Quais regras de negócio são executadas?**
 
-> RN01, RN02, RN03, RN04, RN06, RN11 e RN16, com a taxa calculada sobre o aluguel efetivamente quitado (T17, T27 e T38) e lançada à parte (T05 e T16).
+> RN01, RN02, RN03, RN04, RN06, RN11 e RN16, com a taxa calculada sobre o aluguel efetivamente quitado (T17, T27 e T38) e lançada à parte (T05 e T16). Sem taxa pendente, o repasse tem um lançamento só, e a resposta traz `taxa_centavos` zero (DD34).
 
 **Quais situações bloqueiam a operação?**
 
@@ -1357,7 +1360,7 @@ POST /transacoes/f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13/estornos
 | Transação inexistente (ou não é sua) | 404 | `QIT001023` |
 | Transação já estornada, ou que é ela mesma um estorno | 409 | `QIT001024` |
 | Desfazer deixaria o saldo disponível negativo | 409 | `QIT001020` |
-| Desfazer deixaria o saldo reservado negativo | 409 | `QIT001021` |
+| Desfazer deixaria negativo o reservado de alguma natureza (DD33) | 409 | `QIT001021` |
 | Mesma `Idempotency-Key` usada para outra transação | 409 | `QIT001022` |
 
 ---
@@ -1505,7 +1508,7 @@ Com a conta travada, procura a transação com a mesma Idempotency-Key
 > * **A trava vem antes da verificação de saldo:** o `SELECT ... FOR UPDATE` é a primeira leitura da conta na transação (DD16), é tomado antes da validação e é mantido até o commit. Sem ele, as duas requisições leriam o mesmo saldo antes de qualquer uma escrever, e as duas passariam. A trava serializa aquela conta, não o sistema (RFC).
 > * **"Verificar saldo":** o valor bruto precisa caber no **saldo disponível** (RN11).
 > * **"Calcular tarifa":** a taxa pendente sobre o aluguel efetivamente quitado (T27 e T38): `max(0, ⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida))` (DD26); líquido = `valor_bruto − taxa` (T17).
-> * **"Registrar movimentações":** dois lançamentos, `taxa` e `repasse`, que somados dão o valor bruto (RN16).
+> * **"Registrar movimentações":** o lançamento `repasse`, com o líquido, e o lançamento `taxa`, quando a taxa pendente é maior que zero; somados, dão o valor bruto (RN16 e DD34).
 > * **Idempotência:** a consulta pela chave acontece com a conta travada (DD17), então nenhuma outra requisição da mesma conta entra no meio. A restrição UNIQUE continua como rede: se ainda assim o INSERT a violar, a violação é capturada e traduzida em 409 (`QIT001022`), nunca em 500 (RFC, T03, DD15 e DD18).
 
 ---
@@ -1744,7 +1747,7 @@ O `cobranca_id` liga o recebimento inteiro à cobrança, inclusive os lançament
 
 ## 12.4 Transferência
 
-Não existe uma tabela de transferência. O repasse é uma **Transação** do tipo `repasse`, e os valores ficam nos **Lançamentos** dela (a taxa e o repasse).
+Não existe uma tabela de transferência. O repasse é uma **Transação** do tipo `repasse`, e os valores ficam nos **Lançamentos** dela: o repasse, com o líquido, e a taxa, quando a taxa pendente é maior que zero (DD34).
 
 ## 12.5 Lançamento
 
@@ -1819,7 +1822,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, e a DD31 e a DD32 foram derivadas na implementação, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD34 foram derivadas na implementação e também aguardam revisão (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1917,6 +1920,8 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD30 | **Código sem comentários:** a intenção fica nos nomes, na estrutura e nos testes, e as decisões ficam neste documento e na descrição dos pull requests | Decisão de estilo do time para a implementação |
 | DD31 | *Derivado, aguarda revisão:* **datas de referência dos encargos e competência.** Os itens enviados na criação da cobrança usam o vencimento como data de referência da multa e dos juros, mesmo que a cobrança seja registrada depois dele. Só o item incluído depois, pela 7.2.9, usa a data da inclusão (T42), que é a data de São Paulo do `criado_em` do item (DD22): a multa incide se o pagamento for depois dessa data, e os juros correm a partir dela. A competência com mês fora de 01 a 12 responde 422 (`QIT001025`), como uma data que não existe (DD10) | T42, DD10, DD20 e DD22 |
 | DD32 | *Derivado, aguarda revisão:* **detalhes do recebimento.** (a) A `Idempotency-Key` tem de 1 a 255 caracteres; ausente, vazia ou maior responde 400 (`QIT000001`), conferida na camada de schema. (b) O `rateio` da resposta tem uma linha por lançamento, na ordem da imputação: juros, multa e uma linha por item que recebeu valor, de modo que duas despesas extras aparecem separadas; entre itens da mesma natureza, o incluído primeiro é pago primeiro. (c) O `em_aberto` inclui a multa e os juros que o recebimento não cobriu (T43), na ordem da política. (d) Os juros acumulam por trechos entre as datas dos recebimentos, sobre o aberto de cada trecho, e truncam uma vez sobre o total (DD20). (e) Data e hora nas respostas, como `ultimo_lancamento_em`, saem em UTC no formato `AAAA-MM-DDTHH:MM:SSZ`, como nos exemplos. (f) A inclusão de item (7.2.9) também trava a conta, porque decide pela posição da cobrança se ela está quitada (RN15). Com a conta travada, o recebimento e a inclusão releem os itens da cobrança, para enxergar um item incluído enquanto esperavam a trava. (g) Um item incluído depois da data do pagamento não entra na posição dessa data (T42): um recebimento com `pago_em` anterior à inclusão não é imputado nele, e a consulta da 7.2.10 com essa `data` não o mostra. (h) "Mesmo corpo" é o mesmo objeto JSON: a ordem das chaves pode mudar sem virar outra requisição. A restrição UNIQUE da chave de idempotência não é alcançada com a conta travada; se ainda assim disparar, responde 409 (`QIT001022`), nunca 500 | T03, T42, T43, DD16, DD18, DD20 e exemplos da seção 7 |
+| DD33 | *Derivado, aguarda revisão:* **pagamento de encargo.** (a) O reservado de uma natureza é a soma dos lançamentos daquela natureza na conta, lida com a conta travada; um encargo acima dele responde 409 (`QIT001021`) mesmo que o `saldo_reservado` total cubra o valor (RN11). (b) A RN07 é garantida pela recusa inteira: o valor pedido é pago todo ou recusado, nunca em parte. A API não compara o valor com os itens da cobrança nem exige que o reservado da competência esteja completo, porque o valor cobrado pelo credor é informado pelo operador (T23). (c) O encargo gera um lançamento negativo da natureza paga, sem item, e não muda a posição da cobrança (7.2.10), que conta só os recebimentos. (d) O estorno (7.2.11) confere o reservado de cada natureza, e não só o `saldo_reservado` total, com o mesmo `QIT001021`: assim nenhuma natureza fica negativa, e a conferência do encargo pela natureza basta. (e) A soma dos lançamentos de uma transação é o valor pedido com o sinal do movimento: positiva no recebimento, negativa no encargo e no repasse (RN16) | RN07, RN11, RN13, RN16, T07, T23 e 7.2.11 |
+| DD34 | *Derivado, aguarda revisão:* **repasse.** (a) O repasse gera o lançamento `taxa`, negativo, só quando a taxa pendente é maior que zero, e o lançamento `repasse`, negativo, com o líquido. Sem taxa pendente (`taxa_administracao_bps` zero, ou taxa já retida), há um lançamento só, e a soma continua igual ao valor bruto (RN16); a restrição `valor_centavos <> 0` não admite lançamento zerado. (b) A taxa já retida é a soma dos lançamentos `taxa` da conta com o sinal trocado, então o estorno de um repasse, com o lançamento `taxa` positivo, a devolve à taxa pendente. (c) A taxa é calculada em inteiro, sem ponto flutuante, e fora do SQL: com valores perto do teto da DD28, o produto pelos pontos-base passa do `BIGINT`. (d) Ordem das conferências: valor menor ou igual a zero (422 `QIT001018`), disponível insuficiente (409 `QIT001020`) e valor menor ou igual à taxa pendente (422 `QIT001026`), como no 8.4, que verifica o saldo antes de calcular a tarifa. Sem estorno, a taxa pendente nunca passa do disponível, e os dois últimos não coincidem. (e) Com taxa de 10000 bps, um disponível feito só de aluguel não sai da conta, porque todo repasse até ele fica menor ou igual à taxa pendente (T40); a taxa de 100% só é retida junto com dinheiro que não é aluguel. É efeito aceito da T40, sem mudar a RN10. (f) A mesma `Idempotency-Key` usada em outra operação da mesma conta (recebimento, encargo ou repasse) responde 409 (`QIT001022`), porque a operação entra no hash (DD18); em outra conta, é outra operação | RN10, RN16, T16, T38, T40, DD18, DD25, DD26 e DD28 |
 
 ---
 

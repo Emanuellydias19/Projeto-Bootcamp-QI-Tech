@@ -17,12 +17,31 @@ class TransacaoResource:
             cobranca_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER)
         )
 
+        return self._response(recebimento, created)
+
+    @SchemaHandler.validate("post_conta_encargo_pagamento.json")
+    @SchemaHandler.validate_idempotency_key
+    def on_post_encargo_pagamento(self, conta_chave: str, payload: dict, request: Request) -> JSONResponse:
+        controller = TransacaoController()
+        encargo, created = controller.pagar_encargo(conta_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+
+        return self._response(encargo, created)
+
+    @SchemaHandler.validate("post_conta_repasse.json")
+    @SchemaHandler.validate_idempotency_key
+    def on_post_repasse(self, conta_chave: str, payload: dict, request: Request) -> JSONResponse:
+        controller = TransacaoController()
+        repasse, created = controller.repassar(conta_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+
+        return self._response(repasse, created)
+
+    def _response(self, resultado: dict, created: bool) -> JSONResponse:
         if created:
             status_code = http_status.HTTP_201_CREATED
         else:
             status_code = http_status.HTTP_200_OK
 
         return JSONResponse(
-            content=jsonable_encoder(recebimento),
+            content=jsonable_encoder(resultado),
             status_code=status_code,
         )

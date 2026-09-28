@@ -181,6 +181,10 @@ def create_app() -> FastAPI:
     application.add_api_route(
         "/cobrancas/{cobranca_chave}/recebimentos", transacao_resource.on_post_recebimento, methods=["POST"]
     )
+    application.add_api_route(
+        "/contas/{conta_chave}/encargos/pagamentos", transacao_resource.on_post_encargo_pagamento, methods=["POST"]
+    )
+    application.add_api_route("/contas/{conta_chave}/repasses", transacao_resource.on_post_repasse, methods=["POST"])
 
     register_error_handlers(application)
 

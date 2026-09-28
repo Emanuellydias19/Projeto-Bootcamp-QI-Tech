@@ -10,8 +10,11 @@ from models.transacao import Transacao
 class Lancamento(Base):
     __tablename__ = "lancamento"
 
+    NATUREZA_ALUGUEL = "aluguel"
     NATUREZA_JUROS = "juros"
     NATUREZA_MULTA = "multa"
+    NATUREZA_TAXA = "taxa"
+    NATUREZA_REPASSE = "repasse"
 
     id = Column(BigInteger, primary_key=True)
     chave = Column(CHAR(36), nullable=False)

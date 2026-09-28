@@ -42,10 +42,16 @@ class BaseController(metaclass=ABCMeta):
             raise
 
     def _get_or_raise(self, repository, chave: str, not_found_error: type) -> Base:
+        return self._find_or_raise(repository.get_by_chave, chave, not_found_error)
+
+    def _get_for_update_or_raise(self, repository, chave: str, not_found_error: type) -> Base:
+        return self._find_or_raise(repository.get_by_chave_for_update, chave, not_found_error)
+
+    def _find_or_raise(self, find, chave: str, not_found_error: type) -> Base:
         if not is_valid_chave(chave):
             raise not_found_error(chave)
 
-        entity = repository.get_by_chave(chave)
+        entity = find(chave)
 
         if entity is None:
             raise not_found_error(chave)

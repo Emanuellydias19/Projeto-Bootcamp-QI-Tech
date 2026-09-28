@@ -9,20 +9,26 @@ class TransacaoRepository:
     def __init__(self, context: Context) -> None:
         self.session = context.db_session
 
-    def create_recebimento(
-        self, conta: Conta, cobranca: Cobranca, chave_idempotencia: str, hash_requisicao: str, pago_em: date
-    ) -> Transacao:
+    def create(self, conta: Conta, tipo: str, chave_idempotencia: str, hash_requisicao: str) -> Transacao:
         transacao = Transacao()
 
         transacao.chave = str(uuid4())
         transacao.conta_id = conta.id
-        transacao.tipo = Transacao.TIPO_RECEBIMENTO
-        transacao.cobranca_id = cobranca.id
+        transacao.tipo = tipo
         transacao.chave_idempotencia = chave_idempotencia
         transacao.hash_requisicao = hash_requisicao
-        transacao.pago_em = pago_em
 
         self.session.add(transacao)
+        return transacao
+
+    def create_recebimento(
+        self, conta: Conta, cobranca: Cobranca, chave_idempotencia: str, hash_requisicao: str, pago_em: date
+    ) -> Transacao:
+        transacao = self.create(conta, Transacao.TIPO_RECEBIMENTO, chave_idempotencia, hash_requisicao)
+
+        transacao.cobranca_id = cobranca.id
+        transacao.pago_em = pago_em
+
         return transacao
 
     def set_resultado(self, transacao: Transacao, resultado: dict) -> None:

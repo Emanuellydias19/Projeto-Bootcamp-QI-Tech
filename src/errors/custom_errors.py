@@ -222,6 +222,28 @@ class ValorAboveDevido(QIException):
         super().__init__(title, self.code, http_status, description, translation)
 
 
+class InsufficientSaldoDisponivel(QIException):
+    code = "QIT001020"
+
+    def __init__(self, valor_centavos, saldo_disponivel_centavos) -> None:
+        title = "Insufficient available balance"
+        http_status = 409
+        description = f"The amount {valor_centavos} is above the {saldo_disponivel_centavos} available in the account."
+        translation = "O saldo disponível da conta não cobre o valor pedido."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class InsufficientSaldoReservado(QIException):
+    code = "QIT001021"
+
+    def __init__(self, natureza, valor_centavos, reservado_centavos) -> None:
+        title = "Insufficient reserved balance"
+        http_status = 409
+        description = f"The amount {valor_centavos} is above the {reservado_centavos} reserved for {natureza}."
+        translation = "O saldo reservado dessa natureza não cobre o valor pedido."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
 class ReusedIdempotencyKey(QIException):
     code = "QIT001022"
 
@@ -252,6 +274,17 @@ class InvalidValor(QIException):
         http_status = 422
         description = f"The amount {valor_centavos} must be greater than zero."
         translation = "O valor precisa ser maior que zero."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class ValorNotAboveTaxa(QIException):
+    code = "QIT001026"
+
+    def __init__(self, valor_centavos, taxa_centavos) -> None:
+        title = "Amount not above the fee"
+        http_status = 422
+        description = f"The gross amount {valor_centavos} must be above the pending fee of {taxa_centavos}."
+        translation = "O valor bruto do repasse precisa ser maior que a taxa de administração pendente."
         super().__init__(title, self.code, http_status, description, translation)
 
 

@@ -10,6 +10,8 @@ class Transacao(Base):
     __tablename__ = "transacao"
 
     TIPO_RECEBIMENTO = "recebimento"
+    TIPO_ENCARGO = "encargo"
+    TIPO_REPASSE = "repasse"
     CONTA_IDEMPOTENCIA_UNIQUE_CONSTRAINT = "uq_transacao_conta_idempotencia"
 
     id = Column(BigInteger, primary_key=True)

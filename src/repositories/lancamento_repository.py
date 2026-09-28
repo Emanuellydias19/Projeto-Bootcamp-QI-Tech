@@ -37,5 +37,13 @@ class LancamentoRepository:
             .all()
         )
 
+    def sum_by_natureza(self, conta: Conta, natureza: str) -> int:
+        total = (
+            self.session.query(func.coalesce(func.sum(Lancamento.valor_centavos), 0))
+            .filter(Lancamento.conta_id == conta.id, Lancamento.natureza == natureza)
+            .scalar()
+        )
+        return int(total)
+
     def get_ultimo_criado_em(self, conta: Conta) -> datetime:
         return self.session.query(func.max(Lancamento.criado_em)).filter(Lancamento.conta_id == conta.id).scalar()
