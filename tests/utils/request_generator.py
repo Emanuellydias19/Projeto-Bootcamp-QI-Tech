@@ -82,3 +82,33 @@ class RequestGenerator:
             headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
         )
         return response.response_status, response.response_json
+
+    @staticmethod
+    def POST_conta_cobrancas(conta_chave: str, cobranca_payload: dict) -> tuple:
+        response = ClientRequisition.send(
+            "POST",
+            f"/contas/{conta_chave}/cobrancas",
+            payload=cobranca_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
+    def POST_cobranca_itens(cobranca_chave: str, item_payload: dict) -> tuple:
+        response = ClientRequisition.send(
+            "POST",
+            f"/cobrancas/{cobranca_chave}/itens",
+            payload=item_payload,
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
+    def GET_cobranca(cobranca_chave: str, params: dict = None) -> tuple:
+        response = ClientRequisition.send(
+            "GET",
+            f"/cobrancas/{cobranca_chave}",
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+            query_params=params,
+        )
+        return response.response_status, response.response_json

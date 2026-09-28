@@ -98,3 +98,39 @@ class PayloadGenerator:
             "juros_mensal_bps": juros_mensal_bps,
         }
         return payload
+
+    @staticmethod
+    def create_cobranca_payload(competencia: str = None, vencimento: str = None, itens: list = None) -> dict:
+        if competencia is None:
+            competencia = "2026-10"
+
+        if vencimento is None:
+            vencimento = "2026-10-05"
+
+        if itens is None:
+            itens = [
+                {"natureza": "aluguel", "valor_centavos": 150000},
+                {"natureza": "condominio", "valor_centavos": 35000},
+                {"natureza": "iptu", "valor_centavos": 15000},
+            ]
+
+        payload = {
+            "competencia": competencia,
+            "vencimento": vencimento,
+            "itens": itens,
+        }
+        return payload
+
+    @staticmethod
+    def create_item_payload(natureza: str = None, valor_centavos: int = None) -> dict:
+        if natureza is None:
+            natureza = "despesa_extra"
+
+        if valor_centavos is None:
+            valor_centavos = 8000
+
+        payload = {
+            "natureza": natureza,
+            "valor_centavos": valor_centavos,
+        }
+        return payload

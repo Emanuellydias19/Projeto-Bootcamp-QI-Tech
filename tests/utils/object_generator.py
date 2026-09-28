@@ -34,10 +34,21 @@ class ObjectGenerator:
         return response
 
     @staticmethod
-    def create_conta(proprietario_chave: str) -> dict:
-        conta_payload = PayloadGenerator.create_conta_payload(proprietario_chave)
+    def create_conta(proprietario_chave: str, multa_bps: int = None, juros_mensal_bps: int = None) -> dict:
+        conta_payload = PayloadGenerator.create_conta_payload(
+            proprietario_chave, multa_bps=multa_bps, juros_mensal_bps=juros_mensal_bps
+        )
 
         status, response = RequestGenerator.POST_contas(conta_payload)
+        assert status == 201
+
+        return response
+
+    @staticmethod
+    def create_cobranca(conta_chave: str, vencimento: str = None, itens: list = None) -> dict:
+        cobranca_payload = PayloadGenerator.create_cobranca_payload(vencimento=vencimento, itens=itens)
+
+        status, response = RequestGenerator.POST_conta_cobrancas(conta_chave, cobranca_payload)
         assert status == 201
 
         return response
