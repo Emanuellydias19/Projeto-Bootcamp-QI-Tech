@@ -7,7 +7,7 @@
 
 * **(RFC):** RFC "Conta corrente do proprietário na administração de locação", versão 1, de 20/09/2026. É a fonte de verdade do desenho.
 * **(Pitch):** documento "Conta corrente do proprietário ORCA: dor e solução", preparado para a reunião com a banca.
-* **(Time):** decisões de modelagem e de contrato fechadas pelo time em 23 e 24/09/2026. Quando uma decisão do time ajusta o RFC, ela está registrada em [14. Decisões tomadas](#14-decisões-tomadas).
+* **(Time):** decisões de modelagem e de contrato fechadas pelo time em 23 e 24/09/2026, e decisões de implementação aprovadas em 28/09/2026. Quando uma decisão do time ajusta o RFC, ela está registrada em [14. Decisões tomadas](#14-decisões-tomadas).
 
 O que ainda não foi decidido aparece como **em aberto**, com o ID da seção [13. Decisões em aberto](#13-decisões-em-aberto), e não deve ser resolvido dentro do código.
 
@@ -120,8 +120,21 @@ Os itens ficam desmarcados até serem implementados.
 | Pagamento de encargo | Política de retry do conector |
 | Tarifa e repasse | Emissão de boleto e régua de cobrança |
 | Extrato discriminado e rastreável | Conciliação com extrato bancário |
+| Registro do repasse, travado no disponível | Execução da transferência bancária (PIX, TED ou boleto) |
 
 Também ficam fora **(RFC)**: contrato de locação e reajuste, obrigações acessórias fiscais e controle de acesso por perfil. Nenhum deles disputa saldo, e manter todos deixaria o núcleo raso.
+
+**Nível de controle da Fase 1: nível 1, só registro (Time, DD11).** É uma decisão de escopo, e não uma limitação esquecida. A ORCA não executa a transferência bancária. Ela registra a obrigação, calcula o valor disponível para repasse, aplica as regras de negócio e registra o repasse realizado. Ela não controla o dinheiro fisicamente: controla a posição financeira e a decisão operacional dentro do sistema.
+
+```text
+O banco movimenta o dinheiro
+        ↓
+A ORCA governa o registro e a posição financeira
+        ↓
+A administradora executa o pagamento
+```
+
+**Pergunta esperada da banca:** "Se a administradora pode ignorar o que a ORCA registra, qual é o controle que a API realmente exerce?" A resposta separa controle financeiro de movimentação bancária. A ORCA não controla a transferência bancária: controla a posição financeira que fundamenta o repasse. Para cada proprietário, ela mantém os lançamentos, o saldo disponível, os valores reservados, as despesas, as taxas e os repasses, e, antes de registrar um repasse, valida as regras e impede o registro de um valor acima do disponível. A transferência bancária continua sendo executada pelo sistema financeiro que a administradora já usa.
 
 ---
 
@@ -137,7 +150,7 @@ Antes de definir as rotas, precisamos definir os conceitos que existem no sistem
 | Conta | A posição do proprietário para um imóvel dentro do caixa da administradora | chave pública, proprietário, imóvel, saldo disponível, saldo reservado, taxa de administração, multa e juros (em bps), política de imputação |
 | Cobrança | O que o inquilino deve numa competência (Time, T14 e T25) | chave pública, conta, competência (única por conta), vencimento |
 | Item da cobrança | Quanto é devido de uma natureza naquela competência (Time, T14 e T25) | cobrança, natureza, valor devido |
-| Transação | Um movimento de dinheiro: recebimento, encargo, repasse ou estorno | chave pública, conta, tipo, chave de idempotência, resultado guardado, cobrança paga (só no recebimento), transação estornada (só no estorno) |
+| Transação | Um movimento de dinheiro: recebimento, encargo, repasse ou estorno | chave pública, conta, tipo, chave de idempotência, hash da requisição (DD18), resultado guardado, cobrança paga e data do pagamento (só no recebimento, DD19), transação estornada (só no estorno) |
 | Lançamento | Uma parte da transação, com uma única natureza (aluguel, condomínio, IPTU, despesa extra, multa, juros, taxa, repasse) | chave pública, transação, conta, natureza, valor em centavos (sinalizado, nunca alterado), item da cobrança que quitou (quando houver) |
 | Política de imputação | A ordem em que um valor recebido quita as naturezas | chave pública, nome, versão (nunca editada no lugar), ordem das naturezas, vigente desde |
 | Transferência | Não é uma entidade própria na ORCA: o repasse é uma **Transação** do tipo `repasse` | ver Transação |
@@ -319,11 +332,12 @@ Precisamos decidir:
 > * **Fixa ou percentual:** percentual, em pontos-base (`taxa_administracao_bps`, de 0 a 10000), definido por conta na abertura (RFC).
 > * **Quem paga:** o proprietário; a taxa sai do disponível da conta dele.
 > * **Quando é calculada e descontada (Time, T15):** **no repasse**. **Descartada:** tarifa no recebimento, porque cobraria taxa sobre o dinheiro do síndico e da prefeitura, que só está de passagem. Esta decisão substitui o trecho do fluxo de recebimento do RFC que lançava a taxa no recebimento.
-> * **Base e cálculo (Time, T17, T27 e T38):** a taxa incide **só sobre o aluguel efetivamente quitado**, e não sobre multa, juros ou o valor do repasse pedido. Ela é derivada dos lançamentos, sem estado novo: `taxa pendente = ⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida)`, truncada para baixo; a sobra fica sempre com o proprietário. O repasse retém a taxa pendente e, como ela sai de dentro do valor bruto pedido (T16), o líquido é `valor_bruto − taxa`. Assim a taxa não muda com a quantidade nem com o tamanho dos repasses: num repasse parcial, a taxa do aluguel já quitado é retida uma vez só, e os repasses seguintes não pagam de novo sobre o mesmo aluguel.
+> * **Base e cálculo (Time, T17, T27 e T38):** a taxa incide **só sobre o aluguel efetivamente quitado**, e não sobre multa, juros ou o valor do repasse pedido. Ela é derivada dos lançamentos, sem estado novo: `taxa pendente = max(0, ⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida))`, truncada para baixo e nunca negativa (DD26); a sobra fica sempre com o proprietário. O repasse retém a taxa pendente e, como ela sai de dentro do valor bruto pedido (T16), o líquido é `valor_bruto − taxa`. Assim a taxa não muda com a quantidade nem com o tamanho dos repasses: num repasse parcial, a taxa do aluguel já quitado é retida uma vez só, e os repasses seguintes não pagam de novo sobre o mesmo aluguel.
 > * **Aparece no extrato:** sim, como linha própria, de natureza `taxa` (RFC).
 > * **Transação própria:** não; é um lançamento dentro da transação de repasse (RFC).
 > * **Pode deixar a conta negativa:** não. O valor bruto inteiro precisa caber no disponível, e a taxa sai de dentro dele (RN01 e T16).
-> * **Repasse menor que a taxa pendente (Time, T40):** é recusado com **422** (`QIT001026`), sem nenhum lançamento. A taxa não é retida em parte nem dividida entre repasses, e a API não executa um repasse cujo líquido seria zero ou negativo.
+> * **Repasse menor ou igual à taxa pendente (Time, T40 e DD25):** é recusado com **422** (`QIT001026`), sem nenhum lançamento. A taxa não é retida em parte nem dividida entre repasses, e a API não registra um repasse cujo líquido seria zero ou negativo.
+> * **Taxa pendente depois de um estorno (Time, DD26):** nunca fica negativa. Estornar um recebimento cujo aluguel já teve a taxa retida não gera devolução automática da taxa.
 
 ---
 
@@ -365,7 +379,7 @@ Definir:
 * **Casas decimais:** nenhuma na API (o valor já está em centavos). Em reais, equivale a duas casas.
 * **Arredondamento (Time, T17):** todo cálculo em bps é **truncado para baixo** (`⌊ ⌋`), e a sobra fica sempre com o proprietário. **Descartada:** arredondar para o mais próximo, porque a sobra mudaria de dono conforme o valor.
 * **Valor mínimo:** maior que zero em toda operação com valor; zero ou negativo é recusado com **422** (`QIT001018`) (RFC e DD06).
-* **Valor máximo:** no recebimento, o devido na data do pagamento, que é o aberto da cobrança mais a multa e os juros daquela data (RN12 e T35). No repasse e no pagamento de encargo, o saldo correspondente (RN11). Fora isso, o limite técnico é o de `bigint`.
+* **Valor máximo:** no recebimento, o devido na data do pagamento, que é o aberto da cobrança mais a multa e os juros daquela data (RN12 e T35). No repasse e no pagamento de encargo, o saldo correspondente (RN11). Fora isso, o limite é 9007199254740991, o maior inteiro que um cliente JSON lê sem perder precisão e bem abaixo do limite do `bigint`, barrado no schema com 400 (DD28).
 * **Nas requisições:** inteiro em centavos, no campo `valor_centavos`.
 * **Nas respostas:** inteiro em centavos. Os lançamentos são **sinalizados** (RFC): entrada positiva e saída negativa.
 
@@ -410,7 +424,7 @@ Definir:
 
 * **Identificador público:** o campo `chave`, em todas as entidades expostas (proprietário, conta, cobrança, transação, lançamento e política de imputação).
 * **Identificador interno:** o campo `id`, usado só para chaves estrangeiras dentro do banco.
-* **Formato:** `chave` é **UUID**; `id` é `bigserial`.
+* **Formato:** `chave` é **UUID**, gerado na aplicação (`uuid4`) e guardado em `CHAR(36)`, como na base (DD13); `id` é `bigserial`.
 * **Expor o id interno:** nunca. "Nenhuma rota aceita ou devolve o id interno, só a chave pública." A chave pública esconde o volume de registros e não quebra se a base for migrada (Pitch).
 
 **Política de imputação (Time, T30 e T41):** a conta aponta para a política pelo `politica_id`, que é interno. Na API, a política é identificada pela `chave` pública dela, como as outras entidades (T08 e DD08): a abertura de conta recebe `politica_imputacao_chave`. Na Fase 1 existe uma política só, a padrão, criada no `database.sql` com versão 1 e chave fixa (T41).
@@ -460,9 +474,9 @@ As rotas genéricas do escopo (`/clientes`, `/transacoes`, `/transferencias`) fo
 | POST | `/contas/{chave}/cobrancas` | Registrar o que o inquilino deve numa competência | `competencia`, `vencimento`, `itens` (natureza e valor) | 201 com a chave da cobrança | 404 conta; 409 já existe cobrança para essa competência |
 | POST | `/cobrancas/{chave}/itens` | Incluir um item (despesa lançada depois) numa cobrança ainda não quitada | `natureza`, `valor_centavos` | 201 | 404 cobrança; 409 cobrança já quitada |
 | GET | `/cobrancas/{chave}` | Consultar a cobrança: o devido, o pago e o aberto de cada item, e o total devido numa data, com multa e juros | a chave no caminho; query `data` (opcional, DD05) | 200 | 404 cobrança |
-| POST | `/cobrancas/{chave}/recebimentos` | Registrar o pagamento do inquilino e imputar o valor sobre a cobrança | `valor_centavos`, `pago_em`; header `Idempotency-Key` | 201 com o rateio aplicado; 200 na repetição idêntica | 409 mesma chave com corpo diferente; 404 cobrança; 422 valor menor ou igual a zero; 422 valor acima do devido na data do pagamento |
+| POST | `/cobrancas/{chave}/recebimentos` | Registrar o pagamento do inquilino e imputar o valor sobre a cobrança | `valor_centavos`, `pago_em`; header `Idempotency-Key` | 201 com o rateio aplicado; 200 na repetição idêntica | 409 mesma chave com corpo diferente; 404 cobrança; 422 valor menor ou igual a zero; 422 valor acima do devido na data do pagamento; 422 `pago_em` no futuro ou anterior a um recebimento já registrado |
 | POST | `/contas/{chave}/encargos/pagamentos` | Pagar condomínio ou IPTU com o reservado daquela natureza | `natureza`, `valor_centavos`; header `Idempotency-Key` | 201; 200 na repetição idêntica | 409 reservado insuficiente; 409 chave repetida com corpo diferente; 404 conta |
-| POST | `/contas/{chave}/repasses` | Reter a taxa e transferir o líquido ao proprietário | `valor_centavos` (bruto); header `Idempotency-Key` | 201 com a taxa e o líquido; 200 na repetição idêntica | 409 disponível insuficiente; 409 chave repetida com corpo diferente; 404 conta |
+| POST | `/contas/{chave}/repasses` | Reter a taxa e registrar o repasse do líquido ao proprietário (DD11) | `valor_centavos` (bruto); header `Idempotency-Key` | 201 com a taxa e o líquido; 200 na repetição idêntica | 409 disponível insuficiente; 409 chave repetida com corpo diferente; 404 conta |
 | GET | `/contas/{chave}/extrato` | Listar os lançamentos, do mais recente para o mais antigo | query `cursor`, `limite`, `natureza` | 200 com a página e o `proximo_cursor` | 404 conta; 400 limite acima de 50 |
 | GET | `/contas/{chave}/saldo` | Devolver os saldos e a data do último lançamento | a chave no caminho | 200 | 404 conta |
 | POST | `/transacoes/{chave}/estornos` | Estornar uma transação, com lançamentos de sinal invertido | header `Idempotency-Key` | 201; 200 na repetição idêntica | 404 transação; 409 transação já estornada ou que é um estorno; 409 saldo insuficiente para desfazer; 409 chave repetida com outra transação |
@@ -495,8 +509,8 @@ Idempotency-Key: 7f3c2a9e-2c1d-4b8e-9a51-0e6d3f1b2c44
 | Situação | Resposta |
 | --- | --- |
 | Primeira vez com essa chave | **201**, a operação acontece |
-| Mesma chave, mesmo corpo (reenvio após timeout) | **200**, com o resultado original e sem novo efeito |
-| Mesma chave, corpo diferente | **409**, chave reutilizada |
+| Mesma chave e mesma requisição: rota, chave do caminho e corpo (reenvio após timeout) | **200**, com o resultado original e sem novo efeito |
+| Mesma chave, requisição diferente: outra rota, outra chave no caminho ou outro corpo (DD18) | **409**, chave reutilizada |
 
 Sem o header, ou com ele vazio, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32).
 
@@ -535,7 +549,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 
 | Código | HTTP | Quando acontece |
 | --- | ---: | --- |
-| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, natureza fora da lista, `limite` acima de 50 ou `Idempotency-Key` ausente (projeto base) |
+| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` acima de 50, `cursor` que não é um lançamento da conta (DD27) ou `Idempotency-Key` ausente (projeto base) |
 | `QIT000002` | 403 | sem o `INTERNAL-TOKEN`, ou com o valor errado (projeto base) |
 | `QIT001008` | 422 | documento com o formato certo e os dígitos verificadores errados |
 | `QIT001009` | 409 | documento já cadastrado |
@@ -555,7 +569,8 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 | `QIT001023` | 404 | transação não encontrada |
 | `QIT001024` | 409 | transação já estornada, ou que é ela mesma um estorno |
 | `QIT001025` | 422 | data com o formato certo que não existe no calendário (por exemplo, `2026-02-30`) |
-| `QIT001026` | 422 | repasse com valor bruto menor que a taxa pendente (T40) |
+| `QIT001026` | 422 | repasse com valor bruto maior que zero e menor ou igual à taxa pendente (T40 e DD25) |
+| `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento já registrado na cobrança (DD21) |
 
 Os demais erros gerais (`QIT000404`, `QIT000405` e `QIT000500`) seguem o projeto base.
 
@@ -713,7 +728,7 @@ Antes de implementar cada endpoint, responder:
 
 **O que a operação faz?**
 
-> Registra o pagamento do inquilino sobre a cobrança indicada no caminho e imputa o valor nas naturezas, na ordem da política vigente: juros, multa, encargos, aluguel e despesa extra (RFC e T39). Multa e juros são calculados pela fórmula da conta (RN14). O encargo que não fica completo continua reservado (RN13), e o que não foi pago fica em aberto na cobrança para o pagamento seguinte (T14). Cada lançamento que quita um item aponta para ele (T25).
+> Registra o pagamento do inquilino sobre a cobrança indicada no caminho e imputa o valor nas naturezas, na ordem da política vigente: juros, multa, encargos (condomínio antes do IPTU), aluguel e despesa extra (RFC, T39 e DD24). Multa e juros são calculados pela fórmula da conta (RN14 e DD20). O encargo que não fica completo continua reservado (RN13), e o que não foi pago fica em aberto na cobrança para o pagamento seguinte (T14). Cada lançamento que quita um item aponta para ele (T25).
 
 **O que recebe?**
 
@@ -732,7 +747,7 @@ Antes de implementar cada endpoint, responder:
 | Campo | Tipo | Obrigatório | Descrição |
 | --- | --- | --- | --- |
 | `valor_centavos` | inteiro | sim | quanto o inquilino pagou; maior que zero e até o devido na data do pagamento (aberto + multa + juros, T35) |
-| `pago_em` | data | sim | quando o inquilino pagou; base da multa e dos juros |
+| `pago_em` | data | sim | quando o inquilino pagou; base da multa e dos juros; guardado em `transacao.pago_em`, separado do `criado_em` (DD19) |
 
 Exemplo: o inquilino pagou R$ 1.800,00 em dia, abaixo dos R$ 2.000,00 devidos na cobrança de outubro.
 
@@ -773,7 +788,7 @@ POST /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37/recebimentos
 
 **Quais situações bloqueiam a operação?**
 
-> Cobrança inexistente; valor menor ou igual a zero; valor acima do devido na data do pagamento; mesma chave de idempotência com corpo diferente.
+> Cobrança inexistente; valor menor ou igual a zero; valor acima do devido na data do pagamento; `pago_em` no futuro ou anterior a um recebimento já registrado na cobrança; mesma chave de idempotência com corpo diferente.
 
 **Quais erros podem acontecer?**
 
@@ -786,9 +801,12 @@ POST /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37/recebimentos
 | Valor menor ou igual a zero | 422 | `QIT001018` |
 | Valor acima do devido na data do pagamento (aberto + multa + juros) | 422 | `QIT001019` |
 | `pago_em` inexistente no calendário | 422 | `QIT001025` |
+| `pago_em` no futuro (data de São Paulo), ou anterior a um recebimento já registrado na cobrança (DD21 e DD22) | 422 | `QIT001027` |
 | `Idempotency-Key` ausente ou vazia | 400 | `QIT000001` (projeto base) |
 
 > **Sobre o 422 do excedente (Time, T19):** ele recusa o **registro** de um recebimento acima do devido na data do pagamento (o aberto mais a multa e os juros, T35). Não é uma afirmação sobre o dinheiro: a administradora pode ter recebido R$ 2.100 na conta bancária dela. A ORCA não controla o dinheiro físico, controla o registro da posição. Na Fase 1, o excedente fica fora do sistema e é tratado pelo operador.
+>
+> **Multa e juros não cobertos (Time, T43):** o que um recebimento não cobre de multa e juros continua devido e entra na imputação do recebimento seguinte, na ordem da política. Multa e juros não viram principal, então não geram juros.
 
 ### 7.2.4 POST /contas/{chave}/encargos/pagamentos
 
@@ -866,7 +884,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/encargos/pagamentos
 
 **O que a operação faz?**
 
-> Retém a taxa de administração e transfere o líquido ao proprietário, a partir do saldo disponível.
+> Registra o repasse: retém a taxa de administração e registra o líquido repassado ao proprietário, a partir do saldo disponível. A transferência bancária é feita pela administradora, fora da ORCA (DD11).
 
 **O que recebe?**
 
@@ -919,7 +937,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 
 **Quais situações bloqueiam a operação?**
 
-> Conta inexistente; valor bruto maior que o disponível; valor bruto menor que a taxa pendente (T40); mesma chave com corpo diferente.
+> Conta inexistente; valor bruto maior que o disponível; valor bruto menor ou igual à taxa pendente (T40 e DD25); mesma chave com corpo diferente.
 
 **Quais erros podem acontecer?**
 
@@ -928,12 +946,12 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 | Corpo fora do formato | 400 | `QIT000001` (projeto base) |
 | Repetição idêntica (não é erro) | 200 | não se aplica |
 | Disponível insuficiente | 409 | `QIT001020` |
-| Valor bruto menor que a taxa pendente (T40) | 422 | `QIT001026` |
+| Valor bruto menor ou igual à taxa pendente (T40 e DD25) | 422 | `QIT001026` |
 | Mesma `Idempotency-Key` com corpo diferente | 409 | `QIT001022` |
 | Conta inexistente | 404 | `QIT001011` |
 | Valor menor ou igual a zero | 422 | `QIT001018` |
 
-> **Repasse menor que a taxa pendente (Time, T40):**
+> **Repasse menor ou igual à taxa pendente (Time, T40 e DD25):**
 >
 > ```text
 > Taxa pendente:      R$ 150,00
@@ -964,7 +982,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `cursor` | texto | o `proximo_cursor` da página anterior |
+| `cursor` | texto | o `proximo_cursor` da página anterior, que é a chave do último lançamento dela (DD27) |
 | `limite` | inteiro | quantos lançamentos por página: de 1 a 50 (T32), padrão 10, como na base (DD03) |
 | `natureza` | texto | filtra por natureza; com filtro, o extrato não reconstrói o saldo total |
 
@@ -973,7 +991,7 @@ Qualquer outro parâmetro é recusado com 400, como no projeto base.
 **Exemplo de requisição:**
 
 ```http
-GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=20
+GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=2
 ```
 
 **Exemplo de resposta 200:**
@@ -998,12 +1016,12 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=20
       "criado_em": "2026-10-10T14:02:11Z"
     }
   ],
-  "limite": 20,
-  "proximo_cursor": "eyJpZCI6IDQyfQ"
+  "limite": 2,
+  "proximo_cursor": "1b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e"
 }
 ```
 
-Quando não há mais páginas, `proximo_cursor` vem `null`.
+O `proximo_cursor` é a chave do último lançamento da página, e não o id interno (T08 e DD27). Quando não há mais páginas, ele vem `null`.
 
 **Quais regras de negócio são executadas?**
 
@@ -1011,7 +1029,7 @@ Quando não há mais páginas, `proximo_cursor` vem `null`.
 
 **Quais situações bloqueiam a operação?**
 
-> Conta inexistente; limite acima de 50.
+> Conta inexistente; limite acima de 50; `cursor` que não é um lançamento desta conta (DD27).
 
 **Quais erros podem acontecer?**
 
@@ -1020,6 +1038,7 @@ Quando não há mais páginas, `proximo_cursor` vem `null`.
 | Parâmetro desconhecido ou fora do formato | 400 | `QIT000001` (projeto base) |
 | Conta inexistente (ou não é sua conta) | 404 | `QIT001011` |
 | Limite acima de 50 | 400 | `QIT000001` (projeto base) |
+| `cursor` que não é um lançamento desta conta (DD27) | 400 | `QIT000001` (projeto base) |
 
 > **Observação:** com o filtro `natureza`, o extrato mostra só aquela natureza e, sozinho, não reconstrói o saldo total. O `limite` vai até 50 (T32).
 
@@ -1208,20 +1227,23 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/cobrancas
 | Cobrança inexistente | 404 | `QIT001015` |
 | Cobrança já quitada | 409 | `QIT001017` |
 | Natureza diferente de `despesa_extra` | 400 | `QIT000001` (projeto base) |
+| Valor menor ou igual a zero | 422 | `QIT001018` (DD06) |
+
+> **Item incluído depois do vencimento (Time, T42):** entra na multa e nos juros a partir da data de inclusão, sem encargos retroativos pelo período entre o vencimento e a inclusão.
 
 ### 7.2.10 GET /cobrancas/{chave}
 
 **O que a operação faz?**
 
-> Mostra a cobrança como ela está agora: quanto é devido, quanto já foi pago e quanto está em aberto em cada item. É por aqui que o operador sabe o valor máximo aceito num recebimento antes de registrá-lo, já que o recebimento acima do aberto é recusado com 422 (RN12). Rota incluída pela decisão T28.
+> Mostra a cobrança como ela está agora: quanto é devido, quanto já foi pago e quanto está em aberto em cada item. É por aqui que o operador sabe o valor máximo aceito num recebimento antes de registrá-lo, já que o recebimento acima do devido na data (aberto + multa + juros) é recusado com 422 (RN12 e T35). Rota incluída pela decisão T28.
 
 **O que recebe?**
 
-> A `chave` da cobrança no caminho e, na query, a `data` (opcional, `AAAA-MM-DD`; se não vier, vale a data de hoje) (DD05).
+> A `chave` da cobrança no caminho e, na query, a `data` (opcional, `AAAA-MM-DD`; se não vier, vale a data de hoje em São Paulo) (DD05 e DD22).
 
 **O que devolve?**
 
-> **200** com os dados da cobrança; para cada item, o valor devido, o valor pago e o valor em aberto; o total em aberto; a multa e os juros calculados para a `data`; e o **total devido na data**, que é o máximo aceito num recebimento pago nesse dia (RN12 e T35).
+> **200** com os dados da cobrança; o `status` calculado (DD23); para cada item, o valor devido, o valor pago e o valor em aberto; o total em aberto; a multa e os juros devidos na `data`, já descontado o que foi pago deles (DD20 e T43); e o **total devido na data**, que é o máximo aceito num recebimento pago nesse dia (RN12 e T35).
 
 **Headers:** `INTERNAL-TOKEN`.
 
@@ -1243,7 +1265,7 @@ GET /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37?data=2026-10-05
   "conta_chave": "3fbf83e9-e5fc-4e0f-8427-db6a1a50f964",
   "competencia": "2026-10",
   "vencimento": "2026-10-05",
-  "quitada": false,
+  "status": "parcial",
   "itens": [
     { "natureza": "aluguel", "valor_devido_centavos": 150000, "valor_pago_centavos": 130000, "valor_em_aberto_centavos": 20000 },
     { "natureza": "condominio", "valor_devido_centavos": 35000, "valor_pago_centavos": 35000, "valor_em_aberto_centavos": 0 },
@@ -1259,7 +1281,7 @@ GET /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37?data=2026-10-05
 
 **Quais regras de negócio são executadas?**
 
-> Nenhuma escrita. O que está em aberto não é guardado: é calculado como o valor devido de cada item menos a soma dos lançamentos que apontam para ele (12.7). A cobrança está quitada quando nenhum item tem valor em aberto.
+> Nenhuma escrita. O que está em aberto não é guardado: é calculado como o valor devido de cada item menos a soma dos lançamentos que apontam para ele (12.7). O `status` também é calculado, sem coluna no banco (DD23): `aberta` quando nada foi pago na cobrança, `parcial` quando algo foi pago e ainda há valor devido, e `quitada` só quando nada mais é devido: itens, multa e juros (T43).
 
 **Quais situações bloqueiam a operação?**
 
@@ -1273,7 +1295,7 @@ GET /cobrancas/c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37?data=2026-10-05
 | `data` fora do formato | 400 | `QIT000001` (projeto base) |
 | `data` inexistente no calendário | 422 | `QIT001025` |
 
-> **Multa e juros:** não entram no valor em aberto dos itens, porque dependem da data do pagamento (RN14). Por isso a rota os calcula para a `data` pedida, e o total devido na data é o limite do recebimento (T35). No exemplo, o pagamento é em dia, então os dois são zero.
+> **Multa e juros:** não entram no valor em aberto dos itens, porque dependem da data do pagamento (RN14). Por isso a rota os calcula para a `data` pedida, pela fórmula da DD20, e o total devido na data é o limite do recebimento (T35). No exemplo, o pagamento é em dia, então os dois são zero.
 
 ### 7.2.11 POST /transacoes/{chave}/estornos
 
@@ -1400,29 +1422,33 @@ Operador ──> POST /cobrancas/{chave}/recebimentos
     ↓
 3. localiza a cobrança pela chave do caminho (não existe ──> 404)
     ↓
-4. SELECT conta da cobrança FOR UPDATE (a linha da conta fica travada)
+4. SELECT conta da cobrança FOR UPDATE: a primeira leitura da conta, que fica travada (DD16)
     ↓
-5. INSERT transacao (chave_idempotencia UNIQUE; cobranca_id da cobrança paga)
+5. procura, nessa conta, a transação com a mesma Idempotency-Key (DD18)
+   (hash da requisição igual ──> 200 com o resultado guardado; hash diferente ──> 409)
     ↓
-6. calcula o que está em aberto na cobrança
+6. confere o valor (menor ou igual a zero ──> 422) e o pago_em
+   (no futuro ou antes de um recebimento já registrado na cobrança ──> 422, DD21)
     ↓
-7. calcula multa e juros sobre o aberto, na data do pagamento (RN14)
+7. calcula o que está em aberto na cobrança
+    ↓
+8. calcula multa e juros sobre o aberto, na data do pagamento (RN14 e DD20)
    (valor acima de aberto + multa + juros ──> 422)
     ↓
-8. imputa o valor pela política vigente: juros, multa, encargos, aluguel, despesa extra
+9. imputa o valor pela política vigente: juros, multa, condomínio, IPTU, aluguel, despesa extra (DD24)
     ↓
-9. INSERT lancamentos (um por natureza)
+10. INSERT transacao (chave_idempotencia UNIQUE por conta, hash_requisicao, pago_em, cobranca_id) e INSERT lancamentos (um por natureza)
     ↓
-10. UPDATE saldo_disponivel e saldo_reservado
+11. UPDATE saldo_disponivel e saldo_reservado
     ↓
-11. COMMIT (a trava é liberada)
+12. COMMIT (a trava é liberada)
     ↓
 201 com o rateio aplicado
 ```
 
 ### Decisões sobre o fluxo de transação
 
-> Os passos 2 a 11 vivem numa única transação de banco: lançamentos e saldos nascem juntos ou não nascem (RFC). A ordem de imputação é dado, não código: vem da política versionada apontada pela conta, e o rateio produzido fica gravado nos lançamentos. Diferente do RFC original, a taxa de administração **não** é lançada aqui: ela é retida no repasse (T15).
+> Os passos 2 a 12 vivem numa única transação de banco: lançamentos e saldos nascem juntos ou não nascem (RFC). Nenhuma escrita acontece antes das regras: a transação e os lançamentos só são gravados depois das validações dos passos 5 a 9. A consulta pela `Idempotency-Key` acontece com a conta travada, então uma repetição concorrente espera a trava e depois encontra a transação já confirmada; a restrição UNIQUE continua como rede (DD15 e DD18). A ordem de imputação é dado, não código: vem da política versionada apontada pela conta, e o rateio produzido fica gravado nos lançamentos. Diferente do RFC original, a taxa de administração **não** é lançada aqui: ela é retida no repasse (T15).
 
 ---
 
@@ -1463,20 +1489,20 @@ Repasse B: lê 20000, a validação falha, ROLLBACK
 **Reenvio por timeout (RFC):**
 
 ```text
-INSERT transacao com a mesma Idempotency-Key
-    ├── não violou o UNIQUE ──> opera normalmente ──> 201
-    └── violou o UNIQUE
-            ├── corpo igual ao guardado ──> 200 com o resultado original, sem novo efeito
-            └── corpo diferente ──> 409 chave reutilizada
+Com a conta travada, procura a transação com a mesma Idempotency-Key
+    ├── não existe ──> opera normalmente ──> 201
+    └── existe
+            ├── hash da requisição igual ao guardado ──> 200 com o resultado original, sem novo efeito
+            └── hash diferente ──> 409 chave reutilizada (DD18)
 ```
 
 ### Decisões sobre o fluxo de transferência
 
-> * **A trava vem antes da verificação de saldo:** o `SELECT ... FOR UPDATE` é tomado antes da validação e mantido até o commit. Sem ele, as duas requisições leriam o mesmo saldo antes de qualquer uma escrever, e as duas passariam. A trava serializa aquela conta, não o sistema (RFC).
+> * **A trava vem antes da verificação de saldo:** o `SELECT ... FOR UPDATE` é a primeira leitura da conta na transação (DD16), é tomado antes da validação e é mantido até o commit. Sem ele, as duas requisições leriam o mesmo saldo antes de qualquer uma escrever, e as duas passariam. A trava serializa aquela conta, não o sistema (RFC).
 > * **"Verificar saldo":** o valor bruto precisa caber no **saldo disponível** (RN11).
-> * **"Calcular tarifa":** a taxa pendente sobre o aluguel efetivamente quitado (T27 e T38): `⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida)`; líquido = `valor_bruto − taxa` (T17).
+> * **"Calcular tarifa":** a taxa pendente sobre o aluguel efetivamente quitado (T27 e T38): `max(0, ⌊SUM(aluguel recebido) × taxa_administracao_bps ÷ 10000⌋ − SUM(taxa já retida))` (DD26); líquido = `valor_bruto − taxa` (T17).
 > * **"Registrar movimentações":** dois lançamentos, `taxa` e `repasse`, que somados dão o valor bruto (RN16).
-> * **Idempotência no banco:** a violação da restrição UNIQUE é capturada pela aplicação e traduzida em 200 ou 409, nunca em 500. Quem decide é o banco, não um `if` que consultou antes e correu o risco de outra requisição entrar no meio (RFC).
+> * **Idempotência:** a consulta pela chave acontece com a conta travada (DD17), então nenhuma outra requisição da mesma conta entra no meio. A restrição UNIQUE continua como rede: se ainda assim o INSERT a violar, a violação é capturada e traduzida em 200 ou 409, nunca em 500 (RFC, T03, DD15 e DD18).
 
 ---
 
@@ -1489,6 +1515,8 @@ Validação da query (limite acima de 50 ──> 400)
     ↓
 Conta existe? ─── não ──> 404
     ↓ sim
+Cursor é um lançamento desta conta? ─── não ──> 400 (DD27)
+    ↓ sim, ou sem cursor
 Lê os lançamentos a partir do cursor, do mais recente para o mais antigo
     ↓
 Completa a última transação da página, sem cortá-la ao meio
@@ -1511,12 +1539,12 @@ Para cada operação principal, precisamos definir pelo menos um caminho de falh
 | --- | --- | --- |
 | Cadastro | Documento já cadastrado | A restrição UNIQUE barra o INSERT; a API responde 409, e nada é criado |
 | Criação de conta | Já existe conta para esse proprietário e imóvel | A restrição UNIQUE barra o INSERT; a API responde 409 |
-| Transação (recebimento) | Reenvio da mesma operação após timeout | O UNIQUE da chave de idempotência barra o INSERT; com o corpo igual, 200 com o resultado original, sem novo lançamento; com o corpo diferente, 409 |
+| Transação (recebimento) | Reenvio da mesma operação após timeout | Com a conta travada, a API encontra a transação com a mesma chave de idempotência; com o mesmo hash da requisição, 200 com o resultado original, sem novo lançamento; com outro hash, 409 (DD18). O UNIQUE da chave continua como rede |
 | Transação (recebimento) | Valor acima do devido na data do pagamento (aberto + multa + juros) | 422 (`QIT001019`); nada é registrado, e o excedente é tratado pelo operador fora do sistema (T19) |
 | Transferência (repasse) | Duas requisições concorrentes e disponível insuficiente para a segunda | A segunda espera a trava, lê o saldo atualizado, falha na validação e sofre ROLLBACK; 409 `QIT001020`, nenhum lançamento órfão |
 | Extrato | Limite acima de 50 | 400 (`QIT000001`), sem ler nada do banco |
 | Estorno | Transação já estornada | 409 (`QIT001024`); nada é criado, e a original continua como estava |
-| Transferência (repasse) | Valor bruto menor que a taxa pendente | 422 (`QIT001026`); nenhum lançamento de repasse (T40) |
+| Transferência (repasse) | Valor bruto menor ou igual à taxa pendente | 422 (`QIT001026`); nenhum lançamento de repasse (T40 e DD25) |
 
 ---
 
@@ -1540,14 +1568,14 @@ No projeto base, o schema é um arquivo JSON Schema em `src/schemas/`, conferido
 
 | Campo | Validação |
 | --- | --- |
-| `documento` | obrigatório; CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base |
+| `documento` | obrigatório; CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base, e dígitos só de `0` a `9` (DD28) |
 | `nome` | obrigatório; texto não vazio |
 | `proprietario_chave` | obrigatório; UUID |
 | `{chave}` (caminho) | UUID da conta, da cobrança ou da transação, conforme a rota (T28); fora do formato, é tratada como inexistente: 404, como na base |
 | `imovel_referencia` | obrigatório; texto não vazio |
 | `politica_imputacao_chave` | obrigatório; UUID (DD08) |
-| `taxa_administracao_bps`, `multa_bps`, `juros_mensal_bps` | obrigatórios; inteiros (a faixa de 0 a 10000 é regra de negócio, RN10) |
-| `valor_centavos` | obrigatório; inteiro (no repasse, é o valor bruto) |
+| `taxa_administracao_bps`, `multa_bps`, `juros_mensal_bps` | obrigatórios; inteiros sem casa decimal (`1000.0` é recusado, DD28); a faixa de 0 a 10000 é regra de negócio (RN10) |
+| `valor_centavos` | obrigatório; inteiro sem casa decimal (`150000.0` é recusado) e no máximo 9007199254740991 (DD28); no repasse, é o valor bruto. O valor menor ou igual a zero é regra de negócio (422, DD06) |
 | `competencia` | obrigatório na cobrança; `AAAA-MM` |
 | `vencimento` | obrigatório na cobrança; data no formato `AAAA-MM-DD` |
 | `itens` | obrigatório na cobrança; lista não vazia de `natureza` (`aluguel`, `condominio`, `iptu` ou `despesa_extra`, T36) e `valor_centavos` inteiro |
@@ -1556,7 +1584,7 @@ No projeto base, o schema é um arquivo JSON Schema em `src/schemas/`, conferido
 | `natureza` (item incluído depois) | obrigatório; `despesa_extra` (T36) |
 | `data` (consulta da cobrança) | opcional; `AAAA-MM-DD` |
 | `Idempotency-Key` (header) | obrigatório e não vazio nas quatro rotas de movimento (recebimento, encargo, repasse e estorno); sem ele, 400 (T32) |
-| `cursor`, `limite`, `natureza` (extrato) | opcionais; `limite` inteiro de 1 a 50; nenhum outro parâmetro aceito |
+| `cursor`, `limite`, `natureza` (extrato) | opcionais; `cursor` no formato UUID (DD27); `limite` inteiro de 1 a 50; nenhum outro parâmetro aceito |
 
 ---
 
@@ -1581,7 +1609,8 @@ Exemplos:
 | Cobrança existe | Controller, em todas as rotas com `/cobrancas/{chave}` no caminho; no recebimento, a conta travada é a da cobrança |
 | Valor maior que zero em toda operação com valor | Controller (422, então é regra de negócio e não de formato; DD06) |
 | Valor dentro do devido na data do pagamento: aberto + multa + juros (RN12 e T35) | Controller, com a conta travada |
-| Multa uma vez e juros pro rata die (RN14) | Controller, no recebimento |
+| Multa uma vez e juros pro rata die (RN14), pela fórmula da DD20 | Controller, no recebimento e na consulta da cobrança |
+| `pago_em` nem no futuro nem antes de um recebimento já registrado na cobrança (DD21) | Controller, no recebimento, com a conta travada |
 | Encargo que não fica completo continua reservado (RN13) | Controller, na imputação |
 | Disponível suficiente para o repasse (RN01 e RN11) | Controller, depois do `SELECT ... FOR UPDATE`, dentro da transação de banco |
 | Reservado da natureza suficiente para o encargo (RN11) | Controller, somando os lançamentos da natureza com a conta travada |
@@ -1589,6 +1618,7 @@ Exemplos:
 | Estorno só de transação não estornada e que não é um estorno (DD04) | Controller, com a conta travada, e o banco, com a restrição UNIQUE em `transacao_estornada_id` |
 | Unicidade de documento, de conta por imóvel e de chave de idempotência (RN08, RN09, RN03) | Banco, com restrições UNIQUE; o controller só traduz a violação em 409 ou 200 |
 | Ordem de imputação (RN05) | Controller, lendo a política versionada da conta |
+| Cursor do extrato é um lançamento da conta (DD27) | Controller, no extrato; senão, 400 (`QIT000001`) |
 | Recurso pertence ao solicitante | Controller; recurso de outro dono responde 404, igual ao inexistente (T33). Na Fase 1, com o `INTERNAL-TOKEN` único, não há dono de quem chama |
 
 ---
@@ -1655,7 +1685,7 @@ Database
 
 Somente após fechar o domínio e as regras, definir as estruturas persistidas.
 
-Modelo do RFC com as decisões do time. Em todas as tabelas, `id` é a chave interna (`bigserial`) e nunca sai na resposta. O diagrama está em `docs/rfc/orca-modelo-dados.erd.json` (abre no ERD Editor).
+Modelo do RFC com as decisões do time. Em todas as tabelas, `id` é a chave interna (`bigserial`) e nunca sai na resposta, e a `chave` pública é um UUID gerado na aplicação e guardado em `char(36)` (DD13). O diagrama está em `docs/rfc/orca-modelo-dados.erd.json` (abre no ERD Editor).
 
 ## 12.1 Cliente
 
@@ -1664,8 +1694,8 @@ Na ORCA, o cliente é o **proprietário**.
 ```text
 Proprietario
 - id           bigserial    PK interna
-- chave        uuid         UNIQUE, identificador público
-- documento    char         UNIQUE, unicidade do cadastro
+- chave        char(36)     UNIQUE, identificador público
+- documento    varchar(18)  UNIQUE, unicidade do cadastro; CPF ou CNPJ com a máscara (DD13)
 - nome         text
 - criado_em    timestamptz
 ```
@@ -1675,7 +1705,7 @@ Proprietario
 ```text
 Conta
 - id                      bigserial    PK interna
-- chave                   uuid         UNIQUE, identificador público
+- chave                   char(36)     UNIQUE, identificador público
 - proprietario_id         bigint       FK para Proprietario
 - imovel_referencia       text         UNIQUE junto com o proprietário: uma conta por imóvel e proprietário
 - saldo_disponivel        bigint       o que pode ser repassado; trava e validação do repasse (T13)
@@ -1694,14 +1724,16 @@ O `saldo_centavos` único do RFC foi substituído por `saldo_disponivel` e `sald
 ```text
 Transacao
 - id                  bigserial    PK interna
-- chave               uuid         UNIQUE, identificador público
+- chave               char(36)     UNIQUE, identificador público
 - conta_id            bigint       FK para Conta
 - tipo                text         recebimento, encargo, repasse ou estorno (T22)
 - transacao_estornada_id  bigint  FK para Transacao; preenchida só no estorno; UNIQUE, então uma transação é estornada no máximo uma vez (DD04)
 - cobranca_id         bigint       FK para Cobranca; a cobrança que o recebimento pagou, preenchida só no recebimento (T29)
 - chave_idempotencia  text         UNIQUE por conta; barra o reenvio
+- hash_requisicao     char(64)     SHA-256 da rota, da chave do caminho e do corpo; separa a repetição idêntica da chave reutilizada (DD18)
 - resultado           jsonb        resposta guardada para a repetição idêntica
-- criado_em           timestamptz  quando aconteceu
+- pago_em             date         data efetiva do pagamento; obrigatória no recebimento e vazia nos outros tipos (DD19)
+- criado_em           timestamptz  quando foi registrada
 ```
 
 O `cobranca_id` liga o recebimento inteiro à cobrança, inclusive os lançamentos de multa e juros, que não quitam nenhum item e por isso não têm `item_cobranca_id`. É por ele que a API sabe se a multa daquela cobrança já foi cobrada (RN14).
@@ -1715,7 +1747,7 @@ Não existe uma tabela de transferência. O repasse é uma **Transação** do ti
 ```text
 Lancamento
 - id              bigserial    PK interna
-- chave           uuid         UNIQUE
+- chave           char(36)     UNIQUE; é também o cursor do extrato (DD27)
 - transacao_id    bigint       FK para Transacao
 - conta_id        bigint       FK para Conta
 - natureza        text         aluguel, condominio, iptu, despesa_extra, multa, juros, taxa ou repasse
@@ -1731,10 +1763,10 @@ A natureza decide em qual saldo o lançamento conta: condomínio e IPTU no reser
 ```text
 Politica_imputacao
 - id               bigserial    PK
-- chave            uuid         UNIQUE, identificador público (DD08)
+- chave            char(36)     UNIQUE, identificador público (DD08)
 - nome             text
 - versao           int          UNIQUE; versionada, nunca editada no lugar
-- ordem_naturezas  jsonb        a ordem em que o valor recebido quita as naturezas
+- ordem_naturezas  jsonb        a ordem em que o valor recebido quita as naturezas; na v1: juros, multa, condominio, iptu, aluguel, despesa_extra (T39 e DD24)
 - vigente_desde    timestamptz
 ```
 
@@ -1754,12 +1786,12 @@ política usada na imputação
 
 ## 12.7 Cobrança e itens
 
-Campos decididos pelo time (T14 e T25). O que está em aberto numa cobrança não é guardado: é o valor devido de cada item menos a soma dos lançamentos que apontam para ele. A cobrança está quitada quando nenhum item tem valor em aberto.
+Campos decididos pelo time (T14 e T25). O que está em aberto numa cobrança não é guardado: é o valor devido de cada item menos a soma dos lançamentos que apontam para ele. A cobrança está quitada só quando nada mais é devido: nenhum item em aberto e nenhuma multa ou juros pendentes (T43).
 
 ```text
 Cobranca
 - id               bigserial    PK interna
-- chave            uuid         UNIQUE, identificador público
+- chave            char(36)     UNIQUE, identificador público
 - conta_id         bigint       FK para Conta
 - competencia      text         o mês de referência (por exemplo, AAAA-MM); UNIQUE junto com a conta
 - vencimento       date         base da multa e dos juros (RN14)
@@ -1783,7 +1815,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D26 estão fechadas (seção 14). Os detalhes derivados do padrão da base (DD01 a DD10, no fim da seção 14) só aguardam a revisão do time.
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time; os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão* (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1836,16 +1868,20 @@ Os IDs começam com **T**. Entre parênteses, o ID da questão em aberto que a d
 | T37 (D22) | O **estorno segue o fluxo idempotente** das demais operações: nova transação, `Idempotency-Key`, resultado guardado, conta travada e lançamentos vinculados à transação original (T22) | Uma mesma solicitação de estorno nunca é processada duas vezes | 24/09/2026 |
 | T38 (D23) | A **taxa incide sobre o aluguel efetivamente quitado**, e não sobre o valor do repasse pedido: `taxa pendente = ⌊SUM(aluguel recebido) × bps ÷ 10000⌋ − SUM(taxa já retida)`, derivada dos lançamentos e retida no repasse | Descartado: taxa sobre o valor de cada repasse, porque ela variaria com a quantidade e o tamanho dos repasses | 24/09/2026 |
 | T39 (D24) | A **`despesa_extra` conta no `saldo_disponivel`** e ocupa a **última posição da ordem de imputação**: juros, multa, encargos, aluguel, despesa extra. Ela é tratada como uma dedução da posição disponível do proprietário, e não como valor provisionado para uma rota de encargos; condomínio e IPTU continuam no reservado | Descartado: o reservado, porque a Fase 1 não tem rota que pague despesa extra pelo fluxo de encargos, e o valor ficaria preso | 24/09/2026 |
-| T40 (D25) | **Repasse com valor bruto menor que a taxa pendente é recusado com 422** (`QIT001026`), sem nenhum lançamento: não há retenção parcial da taxa, e ela não é dividida entre repasses | A taxa continua retida uma vez só (T38), e a API não executa um repasse cujo líquido para o proprietário seria zero ou negativo | 24/09/2026 |
+| T40 (D25) | **Repasse com valor bruto menor que a taxa pendente é recusado com 422** (`QIT001026`), e na igualdade também (DD25), sem nenhum lançamento: não há retenção parcial da taxa, e ela não é dividida entre repasses | A taxa continua retida uma vez só (T38), e a API não executa um repasse cujo líquido para o proprietário seria zero ou negativo | 24/09/2026 |
 | T41 (D26) | A **política de imputação padrão é criada no `database.sql`**, pelo mecanismo de inicialização do banco da base, com versão 1 e uma chave UUID fixa; a abertura de conta usa essa política como referência | Evita criar uma rota só para administrar uma entidade que não precisa ser configurável na Fase 1, e garante que toda conta tenha uma política válida | 24/09/2026 |
+| T42 (D27) | Um **item incluído depois do vencimento** (a despesa extra da T21) entra na multa e nos juros, desde que já faça parte da cobrança no momento do pagamento, **sem encargos retroativos**: a data de referência dos encargos dele é a da inclusão, e os juros correm a partir dela. Exemplo: vencimento em 10/09, aluguel de R$ 2.000,00 já na cobrança, despesa extra de R$ 300,00 incluída em 20/09 e pagamento em 25/09. O aluguel tem multa e juros desde 10/09; a despesa extra não recebe encargos de 10/09 a 20/09 | Descartado: tratar o item como se existisse desde o vencimento, porque a administradora poderia criar uma despesa hoje e o sistema cobraria juros de um período em que ela não existia | 28/09/2026 |
+| T43 (D28) | **Multa e juros que um recebimento não cobre continuam devidos** e permanecem no saldo da cobrança. O recebimento é imputado na ordem da política; o que sobra de multa e juros entra na imputação do recebimento seguinte. Multa e juros **não viram principal**, então não geram juros. A cobrança só está **quitada** quando todos os valores devidos (itens, multa e juros) foram cobertos. Exemplo: principal de R$ 2.000,00, multa de R$ 40,00 e juros de R$ 6,66 somam R$ 2.046,66; um pagamento de R$ 2.020,00 deixa valor devido, e a cobrança não fica quitada | Descartado: perdoar o que o pagamento não cobre, porque um pagamento pequeno apagaria a multa; e somar multa e juros ao principal, porque criaria juros sobre juros | 28/09/2026 |
 
-### Detalhes derivados do padrão da base
+### Detalhes derivados e decisões de implementação
 
-Os itens abaixo **não são decisões novas de modelagem**. São detalhes de contrato que completam as decisões acima seguindo o padrão que a base já adota, ou uma decisão já tomada. O time só revisa e confirma se estão coerentes com o contrato da base.
+Os itens DD01 a DD10 **não são decisões novas de modelagem**: são detalhes de contrato que completam as decisões acima seguindo o padrão que a base já adota, ou uma decisão já tomada, e aguardam a revisão do time.
+
+Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD19), de regra (DD20 a DD26) e de implementação, aprovadas pelo time em 28/09/2026, antes do início da implementação. Elas seguem a base, a implementação de referência da QI Tech (`bootcamp-biblioteca-api`) ou uma decisão já tomada. Onde um item vai além do que foi aprovado, o complemento aparece marcado como *derivado, aguarda revisão*.
 
 | ID | Detalhe | Derivado de |
 | --- | --- | --- |
-| DD01 | Os códigos do projeto são numerados a partir de `QIT001008` (de `QIT001008` a `QIT001026`), e os dois 409 de saldo têm códigos diferentes (disponível e reservado) | Guia da base: "o próximo livre é o `QIT001008`"; T31 |
+| DD01 | Os códigos do projeto são numerados a partir de `QIT001008` (de `QIT001008` a `QIT001027`), e os dois 409 de saldo têm códigos diferentes (disponível e reservado) | Guia da base: "o próximo livre é o `QIT001008`"; T31 |
 | DD02 | Documento com o formato certo e os dígitos verificadores errados responde **422** (`QIT001008`), e não 400 | Base: o `InvalidDocumentNumber` responde 422 ("li, entendi, e esse valor não pode existir") |
 | DD03 | `limite` do extrato acima de 50 responde **400** (`QIT000001`), porque é barrado no schema; sem o parâmetro, o padrão é 10 | Base: o schema de listagem barra o `limit` pelo `pattern`, e o padrão é 10; T32 |
 | DD04 | Estorno em `POST /transacoes/{chave}/estornos`, sem corpo e sempre da transação inteira (inverte todos os lançamentos); uma transação é estornada no máximo uma vez (UNIQUE em `transacao_estornada_id`), e um estorno não é estornado | T28 (o estorno pertence à transação), T22 e T37 (lançamentos invertidos), T10 (a original não muda) |
@@ -1855,6 +1891,26 @@ Os itens abaixo **não são decisões novas de modelagem**. São detalhes de con
 | DD08 | Na API, a política é identificada pela `chave` pública dela (`politica_imputacao_chave`); a política inexistente responde 404 (`QIT001014`) | T08: nenhuma rota aceita o id interno; T30 |
 | DD09 | Uma `{chave}` fora do formato UUID no caminho é tratada como inexistente: **404** | Base: a chave no caminho não é validada no schema, e a entidade não encontrada responde 404 |
 | DD10 | Data com o formato certo que não existe no calendário responde **422** (`QIT001025`); documento com a máscara de CPF ou CNPJ | Base: `InvalidBirthdate` (422) e o `pattern` do documento |
+| DD11 | **Nível de controle da Fase 1: nível 1, só registro.** A ORCA não executa a transferência bancária: registra a obrigação, calcula o disponível para repasse, aplica as regras e registra o repasse realizado. Controla a posição financeira e a decisão operacional, não o dinheiro físico. É decisão de escopo, explicada em 1.3 | Decisão do time em 28/09/2026, para a defesa na banca (1.3); a execução de PIX, TED e boleto fica fora da Fase 1 (1.2) |
+| DD12 | **Arquitetura e testes da implementação de referência da QI Tech:** rotas com `add_api_route` no `app.py`; pastas `resources`, `schemas`, `controllers`, `repositories`, `models`, `dtos`, `errors` e `utils`, além dos `middlewares` da base; sem camada de domínio, service, repository genérico ou factory. Desenvolvimento em TDD, com testes de integração por HTTP que não importam `src/` | T34; regra R1 da Aula 3 (teste de caixa-preta); `bootcamp-biblioteca-api` |
+| DD13 | **Tipos no banco:** a `chave` em `CHAR(36)`, com UUID v4 gerado na aplicação (menos a da política padrão, fixa no `database.sql`, T41); `BIGSERIAL` nos ids; `BIGINT` nos centavos; `TIMESTAMPTZ` nos instantes (`criado_em`, `vigente_desde`) e `DATE` nas datas de calendário (`vencimento`, `pago_em`); o `documento` em `VARCHAR(18)`, o tamanho do CNPJ com máscara | Base: `CHAR(36)` e `uuid4` no repository. Com o tipo `UUID` do Postgres, uma chave malformada no caminho daria 500, e não o 404 da DD09; T08 e T09 |
+| DD14 | **Nomes no código:** o domínio em português, igual ao contrato (`Conta`, `saldo_reservado`, `receber`, `repassar`); os nomes técnicos no estilo da base (`on_post`, `create`, `get_by_chave_for_update`, `obj_to_dict`) | Seção 7 (contrato em português); padrão de nomes da base |
+| DD15 | **A unicidade é decidida pelo banco:** cada restrição UNIQUE tem nome, e a violação (`IntegrityError`) é traduzida para o erro do catálogo (409), com `flush` antes do commit quando é preciso vê-la antes; a consulta prévia só serve para responder mais cedo. A violação da UNIQUE da `Idempotency-Key` segue a DD18 (200 ou 409 `QIT001022`) | T03 ("o banco decide") e 8.4; na base, duas requisições iguais ao mesmo tempo terminam em 500 |
+| DD16 | **A trava da conta é a primeira leitura dela na transação** (`SELECT ... FOR UPDATE`); cada operação trava uma conta só, e toda regra que depende do saldo é conferida depois da trava | T02; 3.3 (o repasse não tem conta de destino); na base, um objeto lido antes da trava volta com o valor antigo |
+| DD17 | **As quatro operações que movem dinheiro** (recebimento, pagamento de encargo, repasse e estorno) ficam no `transacao_controller.py` e seguem o mesmo roteiro: conta travada, idempotência conferida com a conta travada, regras de negócio, lançamentos e saldos, e o commit como última operação. Nenhuma escrita acontece antes das regras, e qualquer falha desfaz tudo | T22, T24 e T37 (toda operação de dinheiro é uma transação); T34; a idempotência vem depois da trava para que uma repetição concorrente espere a primeira e receba o resultado dela (DD29) |
+| DD18 | **Idempotência com o hash da requisição:** `transacao.hash_requisicao` (`CHAR(64)`) guarda o SHA-256 da rota, da chave do caminho e do corpo em JSON canônico. Mesma chave com hash igual devolve o resultado guardado (200); com hash diferente, 409 (`QIT001022`). Uma operação que falha é desfeita inteira, inclusive a linha de idempotência, e um reenvio com a mesma chave executa de novo | T03 e 8.4 (comparar a requisição); a rota e a chave do caminho entram no hash porque o estorno não tem corpo e a mesma chave, na mesma conta, pode chegar por outra rota; atomicidade (3.3 e 8.3) |
+| DD19 | **`transacao.pago_em` (`DATE`)**: a data efetiva do pagamento, separada do `criado_em`, que é a data do registro; obrigatória no recebimento e vazia nos outros tipos | T18 e RN14: os juros dependem da data de cada pagamento |
+| DD20 | **Fórmula da multa e dos juros.** A multa é o percentual `multa_bps` sobre o valor em aberto dos itens no vencimento, uma vez só. Os juros correm por dias corridos, com divisor de 30 dias, a partir da data mais recente entre o vencimento (ou a inclusão do item, T42) e o `pago_em` do último recebimento não estornado da cobrança, até o `pago_em` (na consulta da cobrança, até a `data`), sobre o valor em aberto dos itens (12.7), sem juros sobre juros nem sobre a multa. O arredondamento trunca uma vez. Exemplo: R$ 2.000,00 pagos 10 dias depois do vencimento, com multa de 2% e juros de 1% ao mês: multa `⌊200000 × 200 ÷ 10000⌋` = 4000 (R$ 40,00); juros `⌊200000 × 100 × 10 ÷ (10000 × 30)⌋` = 666 (R$ 6,66). Para um item incluído depois do vencimento, a data de referência dos encargos é a da inclusão (T42). A multa e os juros que um recebimento não cobre continuam devidos (T43) | T18, T35, T42, T43 e T17 (truncar para baixo) |
+| DD21 | **`pago_em` no futuro, ou anterior a um recebimento não estornado já registrado na cobrança, responde 422** (`QIT001027`). *Derivado, aguarda revisão:* na consulta da cobrança, uma `data` anterior a esse recebimento responde o mesmo 422, e uma `data` no futuro é aceita, para o operador simular o devido | DD20: os juros por período dependem da ordem das datas |
+| DD22 | **"Hoje" é a data de São Paulo** (`America/Sao_Paulo`): vale para o `GET /cobrancas/{chave}` sem `data` e para a checagem de `pago_em` no futuro | DD05; o servidor roda em UTC e viraria o dia às 21h |
+| DD23 | **Status da cobrança calculado, sem coluna:** `aberta` (nada pago na cobrança), `parcial` (algo pago e ainda há valor devido) e `quitada` (nada mais devido: itens, multa e juros), no campo `status` do `GET /cobrancas/{chave}` | 12.7 (o aberto é calculado, não guardado); T14; T43 |
+| DD24 | **Ordem dentro dos encargos: condomínio antes do IPTU.** A política v1 imputa juros, multa, condominio, iptu, aluguel e despesa_extra | T39 e T41; a ordem do exemplo da 7.2.3 |
+| DD25 | **T40 na igualdade:** o repasse com valor bruto maior que zero e menor ou igual à taxa pendente responde 422 (`QIT001026`), porque o líquido seria zero ou negativo. O valor menor ou igual a zero é conferido antes e responde `QIT001018` (DD06) | T40 ("líquido zero ou negativo") |
+| DD26 | **A taxa pendente nunca é negativa** (`max(0, ...)` sobre a fórmula da T38); o estorno de um recebimento cujo aluguel já teve a taxa retida não gera devolução automática da taxa | T38 e T22 |
+| DD27 | **O cursor do extrato é a chave do último lançamento da página.** *Derivado, aguarda revisão:* um cursor que não é um lançamento da conta responde 400 (`QIT000001`), porque o cursor é opaco para o cliente e um valor que a API não emitiu é tratado como parâmetro fora do formato, como o `limite` acima de 50 (DD03) | T08 (o id interno não sai) e T11 |
+| DD28 | **Validação de valores e documentos mais rígida que a da base:** centavos e pontos-base só como inteiro, sem casa decimal (`150000.0` e `1000.0` respondem 400); documentos e datas com `[0-9]` no padrão, e não `\d`. *Derivado, aguarda revisão:* o teto dos valores em centavos é 9007199254740991, o maior inteiro que um cliente JSON lê sem perder precisão. O valor menor ou igual a zero continua respondendo 422 (DD06) | T09; o `integer` do jsonschema aceita `150000.0`, e o `\d` aceita dígitos que não são de `0` a `9` |
+| DD29 | **Testes de concorrência nas operações de dinheiro:** requisições em paralelo por HTTP provam que repasses simultâneos não deixam saldo negativo nem divergência entre saldo e extrato, e que duas requisições com a mesma `Idempotency-Key` produzem um efeito só | T01, T02 e T03; a base e a referência não têm teste de concorrência |
+| DD30 | **Código sem comentários:** a intenção fica nos nomes, na estrutura e nos testes, e as decisões ficam neste documento e na descrição dos pull requests | Decisão de estilo do time para a implementação |
 
 ---
 
@@ -1905,7 +1961,7 @@ Antes de começar a implementação:
 
 * [x] Validações de schema separadas das regras de negócio
 * [x] Regras de negócio associadas às operações
-* [x] Nenhuma decisão importante ficou implícita no código (os detalhes derivados DD01 a DD10 aguardam só a revisão do time)
+* [x] Nenhuma decisão importante ficou implícita no código (DD01 a DD10 e os complementos marcados em DD11 a DD30 aguardam a revisão do time; D27 e D28 foram fechadas como T42 e T43)
 
 ---
 

@@ -68,6 +68,8 @@ pytest
 
 O resultado esperado é `35 passed`. Para rodar um arquivo só: `pytest -v tests/integration/test_healthcheck.py`.
 
+Para conferir o estilo do código com as regras do `.flake8`, rode `python -m flake8 .`. O resultado esperado é nenhuma linha de saída.
+
 > Alguns testes **apagam e recriam o banco**. O que você criou na mão some depois do `pytest`, e isso é esperado.
 
 ## 5. Desligar e resetar
@@ -76,7 +78,7 @@ O resultado esperado é `35 passed`. Para rodar um arquivo só: `pytest -v tests
 | --- | --- |
 | Desligar | `Ctrl+C` no terminal da API e depois `docker compose down` |
 | Ligar de novo | `docker compose up` |
-| Recriar o banco do zero (necessário depois de mudar `database/database.sql`) | `docker compose down -v` e depois `docker compose up` |
+| Recriar o banco do zero (necessário depois de mudar `database/database.sql`) | `docker compose down -v` e depois `docker compose up --build`. O `--build` é obrigatório: o `database.sql` é copiado para dentro da imagem do banco, e sem ele o banco nasce com o arquivo antigo |
 | Ver o log da API | `docker compose logs -f api` |
 
 ## Problemas comuns
@@ -87,6 +89,6 @@ O resultado esperado é `35 passed`. Para rodar um arquivo só: `pytest -v tests
 | `port is already allocated` | No `.env`, descomente `API_PORT=3001` e/ou `DB_PORT=5433`. Se mudou o `DB_PORT`, troque a porta também na `DATABASE_URL`. |
 | `Não consegui falar com a API em http://0.0.0.0:3000` | Faltou a troca `SERVER_LOCALHOST=localhost` no `.env` (passo 2). |
 | `AssertionError ... TypingOnly` | O `.venv` foi criado com o Python 3.13. Apague a pasta `.venv` e refaça com `py -3.12`. |
-| `relation "..." does not exist` | O `database.sql` mudou e o banco é antigo. Rode `docker compose down -v` e `docker compose up`. |
+| `relation "..." does not exist` | O `database.sql` mudou e o banco é antigo. Rode `docker compose down -v` e `docker compose up --build`. |
 
 Para ver as rotas que a API já tem, com exemplos de `curl`, abra o [guia da API base](guia-da-api-base.md).

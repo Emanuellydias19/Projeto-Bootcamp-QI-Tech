@@ -38,7 +38,7 @@
 
 > **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.
 >
-> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As decisões de modelagem e de contrato (rotas, códigos de erro, limites e acesso) estão fechadas e registradas no [documento de decisões](docs/rfc/RFC.md); os detalhes derivados do padrão da base aguardam só a revisão do time. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As decisões de modelagem e de contrato (rotas, códigos de erro, limites e acesso) estão fechadas e registradas no [documento de decisões](docs/rfc/RFC.md). As decisões de implementação (DD11 a DD30) e as duas últimas regras de cálculo (T42 e T43) foram aprovadas em 28/09/2026. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
@@ -125,6 +125,7 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 | Regra 2: sem baixa sem política de imputação | Planejado |
 | Regra 3: sem lançamento genérico | Planejado |
 | Decisões de modelagem | Fechadas |
+| Decisões de implementação (DD11 a DD30) | Aprovadas |
 | Decisões de contrato (rotas, erros, limites, acesso) | Fechadas |
 | Base técnica (API, banco, Docker, testes, token, erros padronizados) | Pronta |
 
