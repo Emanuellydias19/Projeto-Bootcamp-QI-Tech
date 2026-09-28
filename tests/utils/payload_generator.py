@@ -3,6 +3,9 @@ from uuid import uuid4
 from tests.utils.random_generator import RandomGenerator
 
 
+POLITICA_PADRAO_CHAVE = "7d2e9b41-3c5a-4f8e-a1b6-9c0d2e4f6a18"
+
+
 class PayloadGenerator:
     @staticmethod
     def create_sample_entity_payload(
@@ -59,5 +62,39 @@ class PayloadGenerator:
         payload = {
             "documento": documento,
             "nome": nome,
+        }
+        return payload
+
+    @staticmethod
+    def create_conta_payload(
+        proprietario_chave: str,
+        imovel_referencia: str = None,
+        politica_imputacao_chave: str = None,
+        taxa_administracao_bps: int = None,
+        multa_bps: int = None,
+        juros_mensal_bps: int = None,
+    ) -> dict:
+        if imovel_referencia is None:
+            imovel_referencia = "Rua das Flores, 120, apto 34"
+
+        if politica_imputacao_chave is None:
+            politica_imputacao_chave = POLITICA_PADRAO_CHAVE
+
+        if taxa_administracao_bps is None:
+            taxa_administracao_bps = 1000
+
+        if multa_bps is None:
+            multa_bps = 200
+
+        if juros_mensal_bps is None:
+            juros_mensal_bps = 100
+
+        payload = {
+            "proprietario_chave": proprietario_chave,
+            "imovel_referencia": imovel_referencia,
+            "politica_imputacao_chave": politica_imputacao_chave,
+            "taxa_administracao_bps": taxa_administracao_bps,
+            "multa_bps": multa_bps,
+            "juros_mensal_bps": juros_mensal_bps,
         }
         return payload

@@ -1,19 +1,11 @@
 import re
-from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
 
-from tests.utils import PayloadGenerator, RequestGenerator
+from tests.utils import UUID_PATTERN, ConcurrentRequests, PayloadGenerator, RequestGenerator
 from tests.utils.random_generator import RandomGenerator
 from tests.utils.requisition import ClientRequisition
 
 
-UUID_PATTERN = r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
 SIMULTANEOUS_REQUESTS = 5
-
-
-def post_proprietario_after_barrier(barrier: Barrier, payload: dict) -> tuple:
-    barrier.wait()
-    return RequestGenerator.POST_proprietarios(payload)
 
 
 class TestProprietario:
@@ -66,16 +58,13 @@ class TestProprietario:
 
     def test_refuses_duplicated_documento_sent_at_the_same_time(self):
         payload = PayloadGenerator.create_proprietario_payload(documento=RandomGenerator.generate_cnpj())
-        barrier = Barrier(SIMULTANEOUS_REQUESTS)
 
-        with ThreadPoolExecutor(max_workers=SIMULTANEOUS_REQUESTS) as executor:
-            futures = []
-            for _request in range(SIMULTANEOUS_REQUESTS):
-                futures.append(executor.submit(post_proprietario_after_barrier, barrier, payload))
+        results = ConcurrentRequests.send_at_the_same_time(
+            RequestGenerator.POST_proprietarios, (payload,), SIMULTANEOUS_REQUESTS
+        )
 
         statuses = []
-        for future in futures:
-            status, response = future.result()
+        for status, response in results:
             statuses.append(status)
 
             if status == 409:

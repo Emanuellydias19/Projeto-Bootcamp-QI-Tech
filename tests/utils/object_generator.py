@@ -23,3 +23,21 @@ class ObjectGenerator:
         assert status == 202
 
         return response
+
+    @staticmethod
+    def create_proprietario() -> dict:
+        proprietario_payload = PayloadGenerator.create_proprietario_payload()
+
+        status, response = RequestGenerator.POST_proprietarios(proprietario_payload)
+        assert status == 201
+
+        return response
+
+    @staticmethod
+    def create_conta(proprietario_chave: str) -> dict:
+        conta_payload = PayloadGenerator.create_conta_payload(proprietario_chave)
+
+        status, response = RequestGenerator.POST_contas(conta_payload)
+        assert status == 201
+
+        return response
