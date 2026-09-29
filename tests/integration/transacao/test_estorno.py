@@ -846,6 +846,23 @@ class TestEstornoIdempotencia:
 
         assert saldos(conta["conta_chave"]) == {"disponivel": 150000, "reservado": 50000}
 
+    def test_ignores_spaces_and_tabs_around_the_key(self):
+        conta = conta_com_recebimento()
+        idempotency_key = str(uuid4())
+
+        status, repasse = repassar(conta["conta_chave"], 150000)
+        assert status == 201
+
+        status, first_response = estornar(repasse["transacao_chave"], idempotency_key)
+        assert status == 201
+
+        for variante in [idempotency_key + " ", idempotency_key + "\t"]:
+            status, response = estornar(repasse["transacao_chave"], variante)
+            assert status == 200, repr(variante)
+            assert response == first_response
+
+        assert saldos(conta["conta_chave"]) == {"disponivel": 150000, "reservado": 50000}
+
     def test_refuses_the_same_key_on_another_transacao_of_the_conta(self):
         conta = conta_com_recebimento()
         idempotency_key = str(uuid4())

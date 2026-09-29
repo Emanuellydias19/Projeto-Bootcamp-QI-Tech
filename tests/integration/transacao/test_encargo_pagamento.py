@@ -346,6 +346,20 @@ class TestEncargoPagamentoIdempotencia:
         assert status == 200
         assert second_response == first_response
 
+    def test_ignores_spaces_and_tabs_around_the_key(self):
+        conta_chave = conta_com_recebimento()
+        idempotency_key = str(uuid4())
+
+        status, first_response = pagar_encargo(conta_chave, "condominio", 35000, idempotency_key)
+        assert status == 201
+
+        for variante in [idempotency_key + " ", idempotency_key + "\t"]:
+            status, response = pagar_encargo(conta_chave, "condominio", 35000, variante)
+            assert status == 200, repr(variante)
+            assert response == first_response
+
+        assert saldos(conta_chave) == {"disponivel": 150000, "reservado": 15000}
+
     def test_refuses_the_same_key_with_another_body(self):
         conta_chave = conta_com_recebimento()
         idempotency_key = str(uuid4())

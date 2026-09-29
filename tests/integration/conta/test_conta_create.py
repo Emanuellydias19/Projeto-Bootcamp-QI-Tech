@@ -17,6 +17,8 @@ TEXTOS_FORA_DO_FORMATO = [
     "Ma\ud800ria",
     "Ma\nria",
     "Ma\u007fria",
+    "Ma\u0085ria",
+    "Ma\u009bria",
     "Maria\n",
 ]
 

@@ -16,7 +16,7 @@ def enviar_bytes(endpoint: str, corpo: bytes, headers: dict = None):
 
 class TestRequisicoesMalformadas:
     def test_refuses_body_that_is_not_utf8(self):
-        for corpo in [b'{"documento": "\xff\xfe", "nome": "Maria"}', b'{"documento": "123", "nome": "\xed\xa0\x80"}']:
+        for corpo in [b'{"documento": "\xff\xfe", "nome": "Maria"}', b'{"documento": "529.982.247-25", "nome": "\xed\xa0\x80"}']:
             response = enviar_bytes("/proprietarios", corpo)
             assert response.response_status == 400, corpo
             assert response.response_json["code"] == "QIT000001"
@@ -36,6 +36,17 @@ class TestRequisicoesMalformadas:
         response = enviar_bytes("/proprietarios", corpo)
         assert response.response_status == 400
         assert response.response_json["code"] == "QIT000001"
+
+    def test_returns_the_request_id_on_a_500(self):
+        response = ClientRequisition.send(
+            "GET",
+            "/sample_entities",
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN, REQUEST_ID_HEADER: "protocolo-500"},
+            query_params={"name": "\u0000"},
+        )
+        assert response.response_status == 500
+        assert response.response_json["code"] == "QIT000500"
+        assert response.response.headers.get(REQUEST_ID_HEADER) == "protocolo-500"
 
     def test_refuses_options_without_token(self):
         for endpoint in ["/proprietarios", f"/contas/{UNKNOWN_CHAVE}/repasses", "/rota_que_nao_existe"]:

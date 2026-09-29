@@ -16,6 +16,8 @@ TEXTOS_FORA_DO_FORMATO = [
     "Ma\ud800ria",
     "Ma\nria",
     "Ma\u007fria",
+    "Ma\u0085ria",
+    "Ma\u009bria",
     "Maria\n",
 ]
 
@@ -53,7 +55,7 @@ class TestProprietario:
             assert response["code"] == "QIT001009"
 
     def test_refuses_cnpj_alfanumerico_with_wrong_check_digit(self):
-        for documento in ["12.ABC.345/01DE-36", "12.ABC.345/01DF-35", "AA.AAA.AAA/AAAA-00"]:
+        for documento in ["12.ABC.345/01DE-36", "12.ABC.345/01DF-35", "AA.AAA.AAA/AAAA-00", "AB.C52.998/2247-25"]:
             payload = PayloadGenerator.create_proprietario_payload(documento=documento)
 
             status, response = RequestGenerator.POST_proprietarios(payload)
