@@ -8,6 +8,17 @@ UNKNOWN_CHAVE = "00000000-0000-0000-0000-000000000000"
 BPS_FIELDS = ["taxa_administracao_bps", "multa_bps", "juros_mensal_bps"]
 TEXT_FIELDS = ["proprietario_chave", "imovel_referencia", "politica_imputacao_chave"]
 SIMULTANEOUS_REQUESTS = 5
+TEXTOS_FORA_DO_FORMATO = [
+    "M" * 256,
+    "   ",
+    "\t",
+    "\u00a0",
+    "Ma\u0000ria",
+    "Ma\ud800ria",
+    "Ma\nria",
+    "Ma\u007fria",
+    "Maria\n",
+]
 
 
 def new_proprietario_chave() -> str:
@@ -178,6 +189,40 @@ class TestContaCreate:
                 status, response = RequestGenerator.POST_contas(payload)
                 assert status == 400, f"{field}={chave!r}"
                 assert response["code"] == "QIT000001"
+
+    def test_refuses_the_same_imovel_with_spaces_around(self):
+        proprietario_chave = new_proprietario_chave()
+
+        status, _response = RequestGenerator.POST_contas(
+            PayloadGenerator.create_conta_payload(proprietario_chave, imovel_referencia="Rua das Flores, 120")
+        )
+        assert status == 201
+
+        for imovel_referencia in ["Rua das Flores, 120 ", "  Rua das Flores, 120", "\u00a0Rua das Flores, 120\u2003"]:
+            payload = PayloadGenerator.create_conta_payload(proprietario_chave, imovel_referencia=imovel_referencia)
+
+            status, response = RequestGenerator.POST_contas(payload)
+            assert status == 409, repr(imovel_referencia)
+            assert response["code"] == "QIT001012"
+
+    def test_accepts_imovel_referencia_with_up_to_255_characters(self):
+        proprietario_chave = new_proprietario_chave()
+
+        for imovel_referencia in ["R" * 255, "é" * 255, "Rua 😀 " + "x" * 248]:
+            payload = PayloadGenerator.create_conta_payload(proprietario_chave, imovel_referencia=imovel_referencia)
+
+            status, _response = RequestGenerator.POST_contas(payload)
+            assert status == 201, repr(imovel_referencia)
+
+    def test_schema_refuses_imovel_referencia_out_of_format(self):
+        proprietario_chave = new_proprietario_chave()
+
+        for imovel_referencia in TEXTOS_FORA_DO_FORMATO + ["R" * 3000]:
+            payload = PayloadGenerator.create_conta_payload(proprietario_chave, imovel_referencia=imovel_referencia)
+
+            status, response = RequestGenerator.POST_contas(payload)
+            assert status == 400, repr(imovel_referencia)[:40]
+            assert response["code"] == "QIT000001"
 
     def test_schema_refuses_empty_imovel_referencia(self):
         payload = PayloadGenerator.create_conta_payload(new_proprietario_chave(), imovel_referencia="")

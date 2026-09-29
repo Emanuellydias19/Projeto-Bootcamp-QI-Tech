@@ -82,6 +82,34 @@ class TestRecebimentoIdempotencia:
 
         assert saldo_total(conta_chave) == 201016
 
+    def test_ignores_spaces_and_tabs_around_the_key(self):
+        conta_chave = new_conta_chave()
+        cobranca_chave = new_cobranca_chave(conta_chave)
+        idempotency_key = str(uuid4())
+
+        status, first_response = RequestGenerator.POST_cobranca_recebimentos(
+            cobranca_chave, recebimento_payload(50000), idempotency_key
+        )
+        assert status == 201
+
+        for variante in [idempotency_key + " ", idempotency_key + "\t", idempotency_key + " \t "]:
+            status, response = RequestGenerator.POST_cobranca_recebimentos(
+                cobranca_chave, recebimento_payload(50000), variante
+            )
+            assert status == 200, repr(variante)
+            assert response == first_response
+
+        assert saldo_total(conta_chave) == 50000
+
+    def test_counts_the_key_length_without_the_spaces_around(self):
+        conta_chave = new_conta_chave()
+        cobranca_chave = new_cobranca_chave(conta_chave)
+
+        status, _response = RequestGenerator.POST_cobranca_recebimentos(
+            cobranca_chave, recebimento_payload(50000), "k" * 255 + "  "
+        )
+        assert status == 201
+
     def test_refuses_the_same_key_with_another_body(self):
         conta_chave = new_conta_chave()
         cobranca_chave = new_cobranca_chave(conta_chave)

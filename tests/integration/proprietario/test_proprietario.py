@@ -6,6 +6,18 @@ from tests.utils.requisition import ClientRequisition
 
 
 SIMULTANEOUS_REQUESTS = 5
+CNPJ_ALFANUMERICO_DA_RECEITA = "12.ABC.345/01DE-35"
+TEXTOS_FORA_DO_FORMATO = [
+    "M" * 256,
+    "   ",
+    "\t",
+    "\u00a0",
+    "Ma\u0000ria",
+    "Ma\ud800ria",
+    "Ma\nria",
+    "Ma\u007fria",
+    "Maria\n",
+]
 
 
 class TestProprietario:
@@ -23,6 +35,38 @@ class TestProprietario:
         status, response = RequestGenerator.POST_proprietarios(payload)
         assert status == 201
         assert re.fullmatch(UUID_PATTERN, response["proprietario_chave"])
+
+    def test_creates_proprietario_with_cnpj_alfanumerico(self):
+        payload = PayloadGenerator.create_proprietario_payload(documento=RandomGenerator.generate_cnpj_alfanumerico())
+
+        status, response = RequestGenerator.POST_proprietarios(payload)
+        assert status == 201
+        assert re.fullmatch(UUID_PATTERN, response["proprietario_chave"])
+
+    def test_accepts_the_cnpj_alfanumerico_of_the_receita_example(self):
+        payload = PayloadGenerator.create_proprietario_payload(documento=CNPJ_ALFANUMERICO_DA_RECEITA)
+
+        status, response = RequestGenerator.POST_proprietarios(payload)
+        assert status in [201, 409]
+
+        if status == 409:
+            assert response["code"] == "QIT001009"
+
+    def test_refuses_cnpj_alfanumerico_with_wrong_check_digit(self):
+        for documento in ["12.ABC.345/01DE-36", "12.ABC.345/01DF-35", "AA.AAA.AAA/AAAA-00"]:
+            payload = PayloadGenerator.create_proprietario_payload(documento=documento)
+
+            status, response = RequestGenerator.POST_proprietarios(payload)
+            assert status == 422, documento
+            assert response["code"] == "QIT001008"
+
+    def test_schema_refuses_cnpj_alfanumerico_out_of_format(self):
+        for documento in ["12.abc.345/01de-35", "12.ABC.345/01DE-3A", "12.ABC.345/01DÉ-35", "123.ABC.345/01DE-35"]:
+            payload = PayloadGenerator.create_proprietario_payload(documento=documento)
+
+            status, response = RequestGenerator.POST_proprietarios(payload)
+            assert status == 400, documento
+            assert response["code"] == "QIT000001"
 
     def test_refuses_documento_with_wrong_check_digit(self):
         for documento in ["111.222.333-44", "11.222.333/0001-80"]:
@@ -95,6 +139,21 @@ class TestProprietario:
         status, response = RequestGenerator.POST_proprietarios(payload)
         assert status == 400
         assert response["code"] == "QIT000001"
+
+    def test_accepts_nome_with_up_to_255_characters(self):
+        for nome in ["M" * 255, "é" * 255, "  Maria da Silva  ", "Maria 😀"]:
+            payload = PayloadGenerator.create_proprietario_payload(nome=nome)
+
+            status, _response = RequestGenerator.POST_proprietarios(payload)
+            assert status == 201, repr(nome)
+
+    def test_schema_refuses_nome_out_of_format(self):
+        for nome in TEXTOS_FORA_DO_FORMATO:
+            payload = PayloadGenerator.create_proprietario_payload(nome=nome)
+
+            status, response = RequestGenerator.POST_proprietarios(payload)
+            assert status == 400, repr(nome)
+            assert response["code"] == "QIT000001"
 
     def test_schema_refuses_nome_with_wrong_type(self):
         for nome in [None, 123]:

@@ -1,4 +1,5 @@
 import random
+import string
 
 
 class RandomGenerator:
@@ -28,3 +29,16 @@ class RandomGenerator:
         )
 
         return cnpj_number
+
+    @staticmethod
+    def generate_cnpj_alfanumerico():
+        base = [random.choice(string.ascii_uppercase)] + [random.choice(string.digits + string.ascii_uppercase) for _ in range(11)]
+        valores = [ord(caractere) - 48 for caractere in base]
+
+        for pesos in [[5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2], [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]]:
+            resto = sum(valor * peso for valor, peso in zip(valores, pesos)) % 11
+            valores.append(0 if resto < 2 else 11 - resto)
+
+        cnpj = "".join(base) + str(valores[12]) + str(valores[13])
+
+        return f"{cnpj[0:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
