@@ -1,0 +1,21 @@
+{
+  "title": "PostCobrancaItem",
+  "type": "object",
+  "properties": {
+    "natureza": {
+      "type": "string",
+      "enum": [
+        "despesa_extra"
+      ]
+    },
+    "valor_centavos": {
+      "type": "integer",
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "natureza",
+    "valor_centavos"
+  ],
+  "additionalProperties": false
+}

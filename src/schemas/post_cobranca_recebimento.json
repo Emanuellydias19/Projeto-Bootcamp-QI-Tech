@@ -1,0 +1,20 @@
+{
+  "title": "PostCobrancaRecebimento",
+  "type": "object",
+  "properties": {
+    "valor_centavos": {
+      "type": "integer",
+      "maximum": 9007199254740991
+    },
+    "pago_em": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "maxLength": 10
+    }
+  },
+  "required": [
+    "valor_centavos",
+    "pago_em"
+  ],
+  "additionalProperties": false
+}

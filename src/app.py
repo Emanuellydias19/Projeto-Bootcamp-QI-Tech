@@ -9,7 +9,14 @@ from middlewares import (
     register_request_logger_middleware,
     register_session_manager_middleware,
 )
-from resources import HealthCheckResource, SampleEntityResource
+from resources import (
+    CobrancaResource,
+    ContaResource,
+    HealthCheckResource,
+    ProprietarioResource,
+    SampleEntityResource,
+    TransacaoResource,
+)
 from utils.logger import setup_logging
 
 
@@ -124,6 +131,10 @@ def create_app() -> FastAPI:
     # atende cada endereço, e mais nada.
     health_check_resource = HealthCheckResource()
     sample_entity_resource = SampleEntityResource()
+    proprietario_resource = ProprietarioResource()
+    conta_resource = ContaResource()
+    cobranca_resource = CobrancaResource()
+    transacao_resource = TransacaoResource()
 
     application.add_api_route("/", health_check_resource.on_get_home, methods=["GET"])
     application.add_api_route(
@@ -156,6 +167,27 @@ def create_app() -> FastAPI:
         "/sample_entities",
         sample_entity_resource.on_get_list,
         methods=["GET"],
+    )
+
+    application.add_api_route("/proprietarios", proprietario_resource.on_post, methods=["POST"])
+
+    application.add_api_route("/contas", conta_resource.on_post, methods=["POST"])
+    application.add_api_route("/contas/{conta_chave}/saldo", conta_resource.on_get_saldo, methods=["GET"])
+    application.add_api_route("/contas/{conta_chave}/extrato", conta_resource.on_get_extrato, methods=["GET"])
+
+    application.add_api_route("/contas/{conta_chave}/cobrancas", cobranca_resource.on_post, methods=["POST"])
+    application.add_api_route("/cobrancas/{cobranca_chave}", cobranca_resource.on_get_by_chave, methods=["GET"])
+    application.add_api_route("/cobrancas/{cobranca_chave}/itens", cobranca_resource.on_post_item, methods=["POST"])
+
+    application.add_api_route(
+        "/cobrancas/{cobranca_chave}/recebimentos", transacao_resource.on_post_recebimento, methods=["POST"]
+    )
+    application.add_api_route(
+        "/contas/{conta_chave}/encargos/pagamentos", transacao_resource.on_post_encargo_pagamento, methods=["POST"]
+    )
+    application.add_api_route("/contas/{conta_chave}/repasses", transacao_resource.on_post_repasse, methods=["POST"])
+    application.add_api_route(
+        "/transacoes/{transacao_chave}/estornos", transacao_resource.on_post_estorno, methods=["POST"]
     )
 
     register_error_handlers(application)

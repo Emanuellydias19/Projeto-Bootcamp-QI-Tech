@@ -1,0 +1,38 @@
+{
+  "title": "GetContaExtrato",
+  "type": "object",
+  "properties": {
+    "cursor": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "maxLength": 36
+    },
+    "limite": {
+      "type": "string",
+      "oneOf": [
+        {
+          "pattern": "^[1-9]$",
+          "maxLength": 1
+        },
+        {
+          "pattern": "^([1-4][0-9]|50)$",
+          "maxLength": 2
+        }
+      ]
+    },
+    "natureza": {
+      "type": "string",
+      "enum": [
+        "aluguel",
+        "condominio",
+        "iptu",
+        "despesa_extra",
+        "multa",
+        "juros",
+        "taxa",
+        "repasse"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

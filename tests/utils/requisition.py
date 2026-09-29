@@ -4,6 +4,8 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from os import environ
 
 
+REQUEST_TIMEOUT_SECONDS = 30
+
 API_OFFLINE = (
     "Não consegui falar com a API em {base_url}.\n"
     "Ela precisa estar de pé pros testes rodarem. Suba com:  docker compose up"
@@ -42,6 +44,7 @@ class ClientRequisition:
                 cert=cert,
                 verify=verify,
                 params=query_params,
+                timeout=REQUEST_TIMEOUT_SECONDS,
             )
         except RequestsConnectionError:
             raise RuntimeError(API_OFFLINE.format(base_url=base_url)) from None

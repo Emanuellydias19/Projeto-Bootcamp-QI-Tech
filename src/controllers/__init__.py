@@ -1,1 +1,5 @@
 from controllers.sample_entity_controller import SampleEntityController
+from controllers.proprietario_controller import ProprietarioController
+from controllers.conta_controller import ContaController
+from controllers.cobranca_controller import CobrancaController
+from controllers.transacao_controller import TransacaoController

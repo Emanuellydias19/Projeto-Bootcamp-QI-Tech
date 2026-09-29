@@ -2,10 +2,21 @@ import functools
 import json
 import os
 
-from jsonschema import RefResolver, ValidationError, validate
+from jsonschema import Draft202012Validator, RefResolver, ValidationError, validate, validators
 
 from constants import SCHEMA_PATH
 from errors import InvalidSchema
+from utils.idempotency import IDEMPOTENCY_KEY_HEADER, MAXIMUM_IDEMPOTENCY_KEY_LENGTH, read_idempotency_key
+
+
+def is_integer_without_decimal_places(checker, instance) -> bool:
+    return isinstance(instance, int) and not isinstance(instance, bool)
+
+
+StrictIntegerValidator = validators.extend(
+    Draft202012Validator,
+    type_checker=Draft202012Validator.TYPE_CHECKER.redefine("integer", is_integer_without_decimal_places),
+)
 
 
 class SchemaCache:
@@ -108,7 +119,7 @@ class SchemaHandler:
                 resolver = RefResolver(f"file://{SCHEMA_PATH}/", None)
 
                 try:
-                    validate(kwargs["payload"], schema, resolver=resolver)
+                    validate(kwargs["payload"], schema, cls=StrictIntegerValidator, resolver=resolver)
                 except ValidationError as error:
                     raise InvalidSchema(describe_schema_error(error))
 
@@ -166,6 +177,31 @@ class SchemaHandler:
             return wrapper_validate
 
         return decorator_validate
+
+    @staticmethod
+    def validate_idempotency_key(func):
+        @functools.wraps(func)
+        def wrapper_validate(*args, **kwargs):
+            request = kwargs.get("request")
+            if request is None:
+                raise Exception(
+                    f"A rota '{func.__name__}' foi decorada com o validate_idempotency_key, mas "
+                    + "nao tem um parametro chamado 'request'. E de la que sai o header."
+                )
+
+            idempotency_key = read_idempotency_key(request.headers)
+
+            if idempotency_key is None or idempotency_key == "":
+                raise InvalidSchema(f"The {IDEMPOTENCY_KEY_HEADER} header is required.")
+
+            if len(idempotency_key) > MAXIMUM_IDEMPOTENCY_KEY_LENGTH:
+                raise InvalidSchema(
+                    f"The {IDEMPOTENCY_KEY_HEADER} header must have at most {MAXIMUM_IDEMPOTENCY_KEY_LENGTH} characters."
+                )
+
+            return func(*args, **kwargs)
+
+        return wrapper_validate
 
 
 def query_params_to_dict(query_params, schema: dict) -> dict:

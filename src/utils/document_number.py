@@ -2,6 +2,17 @@ CPF_LENGTH = 11
 
 CHECK_DIGIT_POSITIONS = [9, 10]
 
+CNPJ_LENGTH = 14
+
+CNPJ_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+ASCII_ZERO = ord("0")
+
+CNPJ_CHECK_DIGIT_WEIGHTS = [
+    [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+    [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+]
+
 
 def is_valid_cpf(document_number: str) -> bool:
     """Diz se um CPF existe de verdade — não se ele tem a cara certa.
@@ -24,10 +35,7 @@ def is_valid_cpf(document_number: str) -> bool:
     por 11. Resto menor que 2 vira dígito 0; nos outros casos, o dígito é
     11 menos o resto.
     """
-    digits = []
-    for character in document_number:
-        if character.isdigit():
-            digits.append(int(character))
+    digits = _extract_digits(document_number)
 
     if len(digits) != CPF_LENGTH:
         return False
@@ -35,13 +43,7 @@ def is_valid_cpf(document_number: str) -> bool:
     # Um CPF de dígitos todos iguais ("111.111.111-11") passa na conta
     # dos dígitos verificadores e mesmo assim não vale. São onze números
     # conhecidos, e a Receita não emite nenhum deles.
-    all_digits_are_equal = True
-    for digit in digits:
-        if digit != digits[0]:
-            all_digits_are_equal = False
-            break
-
-    if all_digits_are_equal:
+    if _all_digits_are_equal(digits):
         return False
 
     for position in CHECK_DIGIT_POSITIONS:
@@ -51,14 +53,66 @@ def is_valid_cpf(document_number: str) -> bool:
         for index in range(position):
             total = total + digits[index] * (first_weight - index)
 
-        remainder = total % 11
-
-        if remainder < 2:
-            expected_digit = 0
-        else:
-            expected_digit = 11 - remainder
-
-        if digits[position] != expected_digit:
+        if digits[position] != _check_digit(total):
             return False
 
     return True
+
+
+def is_valid_cnpj(document_number: str) -> bool:
+    values = _extract_cnpj_values(document_number)
+
+    if len(values) != CNPJ_LENGTH:
+        return False
+
+    if _all_digits_are_equal(values):
+        return False
+
+    for weights in CNPJ_CHECK_DIGIT_WEIGHTS:
+        position = len(weights)
+        total = 0
+
+        for index in range(position):
+            total = total + values[index] * weights[index]
+
+        if values[position] != _check_digit(total):
+            return False
+
+    return True
+
+
+def _extract_cnpj_values(document_number: str) -> list:
+    values = []
+    for character in document_number:
+        if character in CNPJ_CHARACTERS:
+            values.append(ord(character) - ASCII_ZERO)
+
+    return values
+
+
+def _extract_digits(document_number: str) -> list:
+    digits = []
+    for character in document_number:
+        if character.isdigit():
+            digits.append(int(character))
+
+    return digits
+
+
+def _all_digits_are_equal(digits: list) -> bool:
+    for digit in digits:
+        if digit != digits[0]:
+            return False
+
+    return True
+
+
+def _check_digit(total: int) -> int:
+    remainder = total % 11
+
+    if remainder < 2:
+        check_digit = 0
+    else:
+        check_digit = 11 - remainder
+
+    return check_digit

@@ -56,7 +56,8 @@
     "indexIds": [
       "1e4f3b2799874d32bc22c",
       "8c3af8d43b7a4368a853e",
-      "d41567ad4a904d30a9b87"
+      "d41567ad4a904d30a9b87",
+      "4d8bfa995e364dec91d70"
     ],
     "memoIds": [
       "7bcc1af076c949bd8d08f"
@@ -247,7 +248,9 @@
           "05c7aed511d240aea6e94",
           "a79d76dd8b5c4aa6bcd9c",
           "148098026423493080e0d",
+          "5bc1d051b40b468e89b5d",
           "28cff2a192984a59bb96f",
+          "64fba12bcebc4c39ab771",
           "3c393d70f7f949b8b0d3d"
         ],
         "seqColumnIds": [
@@ -258,7 +261,9 @@
           "05c7aed511d240aea6e94",
           "a79d76dd8b5c4aa6bcd9c",
           "148098026423493080e0d",
+          "5bc1d051b40b468e89b5d",
           "28cff2a192984a59bb96f",
+          "64fba12bcebc4c39ab771",
           "3c393d70f7f949b8b0d3d"
         ],
         "ui": {
@@ -270,7 +275,7 @@
           "color": "#10B981"
         },
         "meta": {
-          "updateAt": 1790253684638,
+          "updateAt": 1790611942098,
           "createAt": 1790202745371
         }
       },
@@ -338,7 +343,7 @@
         "tableId": "64e27ffc97bb45a7846b0",
         "name": "chave",
         "comment": "identificador público",
-        "dataType": "UUID",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
@@ -349,7 +354,7 @@
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790611942098,
           "createAt": 1790202745371
         }
       },
@@ -357,19 +362,19 @@
         "id": "2912528c9c094b86bc855",
         "tableId": "64e27ffc97bb45a7846b0",
         "name": "documento",
-        "comment": "CPF/CNPJ; unicidade do cadastro",
-        "dataType": "CHAR",
+        "comment": "CPF ou CNPJ com a máscara; unicidade do cadastro (DD13)",
+        "dataType": "VARCHAR(18)",
         "default": "",
         "options": 12,
         "ui": {
           "keys": 0,
           "widthName": 63,
-          "widthComment": 177,
-          "widthDataType": 60,
+          "widthComment": 300,
+          "widthDataType": 79,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790612841591,
           "createAt": 1790202745371
         }
       },
@@ -457,19 +462,19 @@
         "id": "2dc7d3e6af0940cab653b",
         "tableId": "90830de3bbe744488869b",
         "name": "versao",
-        "comment": "versionada, nunca editada no lugar",
+        "comment": "UNIQUE junto com o nome; versionada, nunca editada no lugar",
         "dataType": "INT",
         "default": "",
-        "options": 12,
+        "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 188,
+          "widthComment": 330,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790617803913,
           "createAt": 1790202745371
         }
       },
@@ -477,19 +482,19 @@
         "id": "92c52440c4444aeab758c",
         "tableId": "90830de3bbe744488869b",
         "name": "ordem_naturezas",
-        "comment": "juros, multa, encargos, aluguel, despesa_extra (T39)",
+        "comment": "juros, multa, condominio, iptu, aluguel, despesa_extra (T39 e DD24)",
         "dataType": "JSONB",
         "default": "",
         "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 93,
-          "widthComment": 272,
+          "widthComment": 360,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790259217421,
+          "updateAt": 1790612841591,
           "createAt": 1790202745371
         }
       },
@@ -538,7 +543,7 @@
         "tableId": "616473999be64cdf842e7",
         "name": "chave",
         "comment": "identificador público",
-        "dataType": "UUID",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
@@ -549,7 +554,7 @@
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790611942098,
           "createAt": 1790202745371
         }
       },
@@ -758,7 +763,7 @@
         "tableId": "72d13d6fba484650b04ed",
         "name": "chave",
         "comment": "identificador público",
-        "dataType": "UUID",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
@@ -769,7 +774,7 @@
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790611942098,
           "createAt": 1790202745371
         }
       },
@@ -978,7 +983,7 @@
         "tableId": "7c6cede030904fc982dfd",
         "name": "chave",
         "comment": "identificador público",
-        "dataType": "UUID",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
@@ -989,7 +994,7 @@
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790611942098,
           "createAt": 1790202745371
         }
       },
@@ -1077,14 +1082,14 @@
         "id": "3c393d70f7f949b8b0d3d",
         "tableId": "7c6cede030904fc982dfd",
         "name": "criado_em",
-        "comment": "quando aconteceu",
+        "comment": "quando foi registrada",
         "dataType": "TIMESTAMPTZ",
         "default": "",
         "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 101,
+          "widthComment": 115,
           "widthDataType": 79,
           "widthDefault": 60
         },
@@ -1117,19 +1122,19 @@
         "id": "daac1dbb8f124f2ab1fd2",
         "tableId": "19e0b2ca64c143a38689a",
         "name": "chave",
-        "comment": "identificador público",
-        "dataType": "UUID",
+        "comment": "identificador público; também é o cursor do extrato (DD27)",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 111,
+          "widthComment": 300,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790202745371,
+          "updateAt": 1790612841591,
           "createAt": 1790202745371
         }
       },
@@ -1298,7 +1303,7 @@
         "tableId": "90830de3bbe744488869b",
         "name": "chave",
         "comment": "identificador público (DD08); a política padrão v1 tem chave fixa (T41)",
-        "dataType": "UUID",
+        "dataType": "CHAR(36)",
         "default": "",
         "options": 12,
         "ui": {
@@ -1309,8 +1314,48 @@
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790259217421,
+          "updateAt": 1790611942098,
           "createAt": 1790258215018
+        }
+      },
+      "5bc1d051b40b468e89b5d": {
+        "id": "5bc1d051b40b468e89b5d",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "hash_requisicao",
+        "comment": "SHA-256 da rota, da chave do caminho e do corpo (DD18)",
+        "dataType": "CHAR(64)",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 92,
+          "widthComment": 290,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790612841591,
+          "createAt": 1790611942098
+        }
+      },
+      "64fba12bcebc4c39ab771": {
+        "id": "64fba12bcebc4c39ab771",
+        "tableId": "7c6cede030904fc982dfd",
+        "name": "pago_em",
+        "comment": "data efetiva do pagamento, só no recebimento (DD19)",
+        "dataType": "DATE",
+        "default": "",
+        "options": 0,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 278,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1790611942098,
+          "createAt": 1790611942098
         }
       }
     },
@@ -1650,6 +1695,24 @@
           "updateAt": 1790202745371,
           "createAt": 1790202745371
         }
+      },
+      "4d8bfa995e364dec91d70": {
+        "id": "4d8bfa995e364dec91d70",
+        "name": "uq_politica_imputacao_nome_versao",
+        "tableId": "90830de3bbe744488869b",
+        "indexColumnIds": [
+          "8c1c06ac6d654130a21b3",
+          "e0c25714d07549f5b6063"
+        ],
+        "seqIndexColumnIds": [
+          "8c1c06ac6d654130a21b3",
+          "e0c25714d07549f5b6063"
+        ],
+        "unique": true,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
+        }
       }
     },
     "indexColumnEntities": {
@@ -1712,12 +1775,32 @@
           "updateAt": 1790202745371,
           "createAt": 1790202745371
         }
+      },
+      "8c1c06ac6d654130a21b3": {
+        "id": "8c1c06ac6d654130a21b3",
+        "indexId": "4d8bfa995e364dec91d70",
+        "columnId": "dfaeb8ffd9264788bc6cd",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
+        }
+      },
+      "e0c25714d07549f5b6063": {
+        "id": "e0c25714d07549f5b6063",
+        "indexId": "4d8bfa995e364dec91d70",
+        "columnId": "2dc7d3e6af0940cab653b",
+        "orderType": 1,
+        "meta": {
+          "updateAt": 1790617803913,
+          "createAt": 1790617803913
+        }
       }
     },
     "memoEntities": {
       "7bcc1af076c949bd8d08f": {
         "id": "7bcc1af076c949bd8d08f",
-        "value": "Modelo do RFC v1 + decisões do time (23 e 24/09/2026).\nFonte: docs/rfc/RFC.md, seção 12.\n\nSaldos (T13 e T39): condomínio e IPTU contam no reservado; aluguel, multa, juros, despesa_extra, taxa e repasse no disponível.\nEm aberto numa cobrança = devido do item - SUM(lançamentos que apontam para ele).\nRecebimento aponta para a cobrança que pagou (T29): é assim que se sabe se a multa já foi cobrada (RN14).\nEstorno: UNIQUE em transacao_estornada_id, uma transação é estornada no máximo uma vez (DD04).\nPolítica padrão v1 criada no database.sql, com chave fixa (T41).\n\nNenhuma decisão em aberto.",
+        "value": "Modelo do RFC v1 + decisões do time (23, 24 e 28/09/2026).\nFonte: docs/rfc/RFC.md, seção 12.\n\nSaldos (T13 e T39): condomínio e IPTU contam no reservado; aluguel, multa, juros, despesa_extra, taxa e repasse no disponível.\nEm aberto numa cobrança = devido do item - SUM(lançamentos que apontam para ele).\nRecebimento aponta para a cobrança que pagou (T29): é assim que se sabe se a multa já foi cobrada (RN14).\nEstorno: UNIQUE em transacao_estornada_id, uma transação é estornada no máximo uma vez (DD04).\nPolítica padrão v1 criada no database.sql, com chave fixa (T41); ordem: juros, multa, condominio, iptu, aluguel, despesa_extra (DD24).\nChave pública em CHAR(36), com UUID gerado na aplicação (DD13).\nIdempotência: chave_idempotencia + hash_requisicao (DD18). pago_em é a data efetiva do pagamento (DD19).\nStatus da cobrança calculado, sem coluna: aberta, parcial ou quitada (DD23).\n\nItem incluído depois do vencimento: encargos a partir da inclusão, sem retroativo (T42).\nMulta e juros não cobertos continuam devidos; quitada só sem nada devido (T43).\n\nNenhuma decisão em aberto.",
         "ui": {
           "x": 60,
           "y": 40,
@@ -1727,7 +1810,7 @@
           "color": ""
         },
         "meta": {
-          "updateAt": 1790259217421,
+          "updateAt": 1790615184434,
           "createAt": 1790202745371
         }
       }
