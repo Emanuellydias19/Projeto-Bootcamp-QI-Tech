@@ -75,8 +75,8 @@ CREATE TABLE conta(
     CONSTRAINT fk_conta_politica_imputacao FOREIGN KEY (politica_id) REFERENCES politica_imputacao(id),
     CONSTRAINT uq_conta_chave UNIQUE(chave),
     CONSTRAINT uq_conta_proprietario_imovel UNIQUE(proprietario_id, imovel_referencia),
-    CONSTRAINT ck_conta_saldo_disponivel CHECK (saldo_disponivel >= 0),
-    CONSTRAINT ck_conta_saldo_reservado CHECK (saldo_reservado >= 0),
+    CONSTRAINT ck_conta_saldo_disponivel CHECK (saldo_disponivel BETWEEN 0 AND 9007199254740991),
+    CONSTRAINT ck_conta_saldo_reservado CHECK (saldo_reservado BETWEEN 0 AND 9007199254740991),
     CONSTRAINT ck_conta_taxa_administracao_bps CHECK (taxa_administracao_bps BETWEEN 0 AND 10000),
     CONSTRAINT ck_conta_multa_bps CHECK (multa_bps BETWEEN 0 AND 10000),
     CONSTRAINT ck_conta_juros_mensal_bps CHECK (juros_mensal_bps BETWEEN 0 AND 10000)
@@ -150,6 +150,6 @@ CREATE TABLE lancamento(
     CONSTRAINT ck_lancamento_valor CHECK (valor_centavos <> 0)
 );
 
-CREATE INDEX ix_lancamento_conta_id ON lancamento(conta_id);
+CREATE INDEX ix_lancamento_conta_id ON lancamento(conta_id, id);
 CREATE INDEX ix_lancamento_transacao_id ON lancamento(transacao_id);
 CREATE INDEX ix_lancamento_item_cobranca_id ON lancamento(item_cobranca_id);

@@ -28,8 +28,8 @@ class Conta(Base):
     __table_args__ = (
         UniqueConstraint("chave", name="uq_conta_chave"),
         UniqueConstraint("proprietario_id", "imovel_referencia", name=PROPRIETARIO_IMOVEL_UNIQUE_CONSTRAINT),
-        CheckConstraint("saldo_disponivel >= 0", name="ck_conta_saldo_disponivel"),
-        CheckConstraint("saldo_reservado >= 0", name="ck_conta_saldo_reservado"),
+        CheckConstraint("saldo_disponivel BETWEEN 0 AND 9007199254740991", name="ck_conta_saldo_disponivel"),
+        CheckConstraint("saldo_reservado BETWEEN 0 AND 9007199254740991", name="ck_conta_saldo_reservado"),
         CheckConstraint("taxa_administracao_bps BETWEEN 0 AND 10000", name="ck_conta_taxa_administracao_bps"),
         CheckConstraint("multa_bps BETWEEN 0 AND 10000", name="ck_conta_multa_bps"),
         CheckConstraint("juros_mensal_bps BETWEEN 0 AND 10000", name="ck_conta_juros_mensal_bps"),

@@ -6,7 +6,7 @@ from jsonschema import Draft202012Validator, RefResolver, ValidationError, valid
 
 from constants import SCHEMA_PATH
 from errors import InvalidSchema
-from utils.idempotency import IDEMPOTENCY_KEY_HEADER, MAXIMUM_IDEMPOTENCY_KEY_LENGTH
+from utils.idempotency import IDEMPOTENCY_KEY_HEADER, MAXIMUM_IDEMPOTENCY_KEY_LENGTH, read_idempotency_key
 
 
 def is_integer_without_decimal_places(checker, instance) -> bool:
@@ -189,7 +189,7 @@ class SchemaHandler:
                     + "nao tem um parametro chamado 'request'. E de la que sai o header."
                 )
 
-            idempotency_key = request.headers.get(IDEMPOTENCY_KEY_HEADER)
+            idempotency_key = read_idempotency_key(request.headers)
 
             if idempotency_key is None or idempotency_key == "":
                 raise InvalidSchema(f"The {IDEMPOTENCY_KEY_HEADER} header is required.")

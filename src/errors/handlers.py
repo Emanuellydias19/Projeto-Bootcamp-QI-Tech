@@ -12,6 +12,7 @@ from errors.base_error import (
     NotFoundResource,
 )
 from utils.logger import get_logger
+from utils.request_context import REQUEST_ID_HEADER, get_request_id
 
 
 logger = get_logger(__name__)
@@ -61,6 +62,9 @@ def register_error_handlers(application: FastAPI) -> None:
         if exception.status_code == 405:
             return qi_exception_to_response(MethodNotAllowed())
 
+        if exception.status_code == 400:
+            return qi_exception_to_response(InvalidSchema(str(exception.detail)))
+
         logger.error(f"HTTP {exception.status_code} em {request.url.path}: {exception.detail}")
         return qi_exception_to_response(InternalError())
 
@@ -97,5 +101,7 @@ def register_error_handlers(application: FastAPI) -> None:
 
     @application.exception_handler(Exception)
     def handle_unexpected_error(request: Request, exception: Exception) -> JSONResponse:
-        logger.exception(f"Erro inesperado em {request.method} {request.url.path}")
-        return qi_exception_to_response(InternalError())
+        logger.error(f"Erro inesperado em {request.method} {request.url.path}", exc_info=exception)
+        response = qi_exception_to_response(InternalError())
+        response.headers[REQUEST_ID_HEADER] = get_request_id()
+        return response

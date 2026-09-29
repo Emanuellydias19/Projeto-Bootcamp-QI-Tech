@@ -3,6 +3,16 @@ from hashlib import sha256
 
 IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
 MAXIMUM_IDEMPOTENCY_KEY_LENGTH = 255
+OPTIONAL_WHITESPACE = " \t"
+
+
+def read_idempotency_key(headers) -> str:
+    idempotency_key = headers.get(IDEMPOTENCY_KEY_HEADER)
+
+    if idempotency_key is None:
+        return None
+
+    return idempotency_key.strip(OPTIONAL_WHITESPACE)
 
 
 def hash_requisicao(operacao: str, chave: str, corpo: dict) -> str:

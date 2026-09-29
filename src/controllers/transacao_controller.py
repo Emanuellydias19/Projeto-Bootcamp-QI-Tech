@@ -11,6 +11,7 @@ from errors import (
     NotFoundTransacao,
     NotLastRecebimento,
     ReusedIdempotencyKey,
+    SaldoAboveMaximum,
     TransacaoNotEstornavel,
     ValorAboveDevido,
     ValorNotAboveTaxa,
@@ -24,6 +25,7 @@ from utils.posicao_cobranca import calcular_posicao, data_do_ultimo_pagamento
 from utils.taxa_administracao import calcular_taxa_pendente
 
 NATUREZAS_DO_RESERVADO = ["condominio", "iptu"]
+MAXIMUM_SALDO_CENTAVOS = 9007199254740991
 
 
 class TransacaoController(BaseController):
@@ -60,6 +62,7 @@ class TransacaoController(BaseController):
             raise ValorAboveDevido(valor, posicao["total_devido_na_data_centavos"])
 
         imputacao = imputar(valor, conta.politica.ordem_naturezas, posicao)
+        self._check_teto_dos_saldos(conta, imputacao["rateio"])
 
         transacao = self.transacao_repository.create_recebimento(
             conta, cobranca, chave_idempotencia, hash_da_requisicao, pago_em
@@ -174,6 +177,7 @@ class TransacaoController(BaseController):
             parcelas.append(self._parcela(lancamento.natureza, -lancamento.valor_centavos, lancamento.item_cobranca_id))
 
         self._check_saldos_do_estorno(conta, parcelas)
+        self._check_teto_dos_saldos(conta, parcelas)
 
         transacao = self.transacao_repository.create_estorno(
             conta, transacao_estornada, chave_idempotencia, hash_da_requisicao
@@ -220,6 +224,15 @@ class TransacaoController(BaseController):
 
             if reservado_da_natureza + variacao_da_natureza < 0:
                 raise InsufficientSaldoReservado(natureza, -variacao_da_natureza, reservado_da_natureza)
+
+    def _check_teto_dos_saldos(self, conta: Conta, parcelas: list) -> None:
+        variacao_disponivel, variacao_reservado = self._variacoes_dos_saldos(parcelas)
+
+        if conta.saldo_disponivel + variacao_disponivel > MAXIMUM_SALDO_CENTAVOS:
+            raise SaldoAboveMaximum(MAXIMUM_SALDO_CENTAVOS)
+
+        if conta.saldo_reservado + variacao_reservado > MAXIMUM_SALDO_CENTAVOS:
+            raise SaldoAboveMaximum(MAXIMUM_SALDO_CENTAVOS)
 
     def _parcela(self, natureza: str, valor_centavos: int, item_cobranca_id: int = None) -> dict:
         return {"natureza": natureza, "valor_centavos": valor_centavos, "item_cobranca_id": item_cobranca_id}

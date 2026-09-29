@@ -34,7 +34,7 @@ class Lancamento(Base):
             name="ck_lancamento_natureza",
         ),
         CheckConstraint("valor_centavos <> 0", name="ck_lancamento_valor"),
-        Index("ix_lancamento_conta_id", "conta_id"),
+        Index("ix_lancamento_conta_id", "conta_id", "id"),
         Index("ix_lancamento_transacao_id", "transacao_id"),
         Index("ix_lancamento_item_cobranca_id", "item_cobranca_id"),
     )

@@ -288,6 +288,17 @@ class NotLastRecebimento(QIException):
         super().__init__(title, self.code, http_status, description, translation)
 
 
+class SaldoAboveMaximum(QIException):
+    code = "QIT001029"
+
+    def __init__(self, maximo_centavos) -> None:
+        title = "Balance above the maximum"
+        http_status = 422
+        description = f"The operation would take a balance of the account above {maximo_centavos} cents."
+        translation = "A operação deixaria um saldo da conta acima do valor máximo aceito."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
 class InvalidPagoEm(QIException):
     code = "QIT001027"
 

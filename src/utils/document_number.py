@@ -4,6 +4,10 @@ CHECK_DIGIT_POSITIONS = [9, 10]
 
 CNPJ_LENGTH = 14
 
+CNPJ_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+ASCII_ZERO = ord("0")
+
 CNPJ_CHECK_DIGIT_WEIGHTS = [
     [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
     [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
@@ -56,12 +60,12 @@ def is_valid_cpf(document_number: str) -> bool:
 
 
 def is_valid_cnpj(document_number: str) -> bool:
-    digits = _extract_digits(document_number)
+    values = _extract_cnpj_values(document_number)
 
-    if len(digits) != CNPJ_LENGTH:
+    if len(values) != CNPJ_LENGTH:
         return False
 
-    if _all_digits_are_equal(digits):
+    if _all_digits_are_equal(values):
         return False
 
     for weights in CNPJ_CHECK_DIGIT_WEIGHTS:
@@ -69,12 +73,21 @@ def is_valid_cnpj(document_number: str) -> bool:
         total = 0
 
         for index in range(position):
-            total = total + digits[index] * weights[index]
+            total = total + values[index] * weights[index]
 
-        if digits[position] != _check_digit(total):
+        if values[position] != _check_digit(total):
             return False
 
     return True
+
+
+def _extract_cnpj_values(document_number: str) -> list:
+    values = []
+    for character in document_number:
+        if character in CNPJ_CHARACTERS:
+            values.append(ord(character) - ASCII_ZERO)
+
+    return values
 
 
 def _extract_digits(document_number: str) -> list:

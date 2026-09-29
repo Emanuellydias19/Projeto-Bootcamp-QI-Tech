@@ -38,7 +38,9 @@ class ContaController(BaseController):
             if conta_data[field] < MINIMUM_BPS or conta_data[field] > MAXIMUM_BPS:
                 raise InvalidBps(field, MINIMUM_BPS, MAXIMUM_BPS)
 
-        conta = self.conta_repository.create(proprietario, politica, conta_data)
+        conta = self.conta_repository.create(
+            proprietario, politica, {**conta_data, "imovel_referencia": conta_data["imovel_referencia"].strip()}
+        )
 
         self._flush_or_raise({Conta.PROPRIETARIO_IMOVEL_UNIQUE_CONSTRAINT: DuplicatedConta})
 

@@ -4,7 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from controllers import TransacaoController
-from utils.idempotency import IDEMPOTENCY_KEY_HEADER
+from utils.idempotency import read_idempotency_key
 from utils.schema_handler import SchemaHandler
 
 
@@ -14,7 +14,7 @@ class TransacaoResource:
     def on_post_recebimento(self, cobranca_chave: str, payload: dict, request: Request) -> JSONResponse:
         controller = TransacaoController()
         recebimento, created = controller.receber(
-            cobranca_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER)
+            cobranca_chave, payload, read_idempotency_key(request.headers)
         )
 
         return self._response(recebimento, created)
@@ -23,7 +23,7 @@ class TransacaoResource:
     @SchemaHandler.validate_idempotency_key
     def on_post_encargo_pagamento(self, conta_chave: str, payload: dict, request: Request) -> JSONResponse:
         controller = TransacaoController()
-        encargo, created = controller.pagar_encargo(conta_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+        encargo, created = controller.pagar_encargo(conta_chave, payload, read_idempotency_key(request.headers))
 
         return self._response(encargo, created)
 
@@ -31,14 +31,14 @@ class TransacaoResource:
     @SchemaHandler.validate_idempotency_key
     def on_post_repasse(self, conta_chave: str, payload: dict, request: Request) -> JSONResponse:
         controller = TransacaoController()
-        repasse, created = controller.repassar(conta_chave, payload, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+        repasse, created = controller.repassar(conta_chave, payload, read_idempotency_key(request.headers))
 
         return self._response(repasse, created)
 
     @SchemaHandler.validate_idempotency_key
     def on_post_estorno(self, transacao_chave: str, request: Request) -> JSONResponse:
         controller = TransacaoController()
-        estorno, created = controller.estornar(transacao_chave, request.headers.get(IDEMPOTENCY_KEY_HEADER))
+        estorno, created = controller.estornar(transacao_chave, read_idempotency_key(request.headers))
 
         return self._response(estorno, created)
 

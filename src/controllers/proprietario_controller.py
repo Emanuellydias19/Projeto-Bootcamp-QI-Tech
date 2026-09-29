@@ -19,7 +19,7 @@ class ProprietarioController(BaseController):
         if not is_valid_cpf(documento) and not is_valid_cnpj(documento):
             raise InvalidDocumento()
 
-        proprietario = self.proprietario_repository.create(proprietario_data)
+        proprietario = self.proprietario_repository.create({**proprietario_data, "nome": proprietario_data["nome"].strip()})
 
         self._flush_or_raise({Proprietario.DOCUMENTO_UNIQUE_CONSTRAINT: DuplicatedDocumento})
 

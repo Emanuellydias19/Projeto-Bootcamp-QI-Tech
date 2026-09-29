@@ -380,6 +380,7 @@ Definir:
 * **Arredondamento (Time, T17):** todo cálculo em bps é **truncado para baixo** (`⌊ ⌋`), e a sobra fica sempre com o proprietário. **Descartada:** arredondar para o mais próximo, porque a sobra mudaria de dono conforme o valor.
 * **Valor mínimo:** maior que zero em toda operação com valor; zero ou negativo é recusado com **422** (`QIT001018`) (RFC e DD06).
 * **Valor máximo:** no recebimento, o devido na data do pagamento, que é o aberto da cobrança mais a multa e os juros daquela data (RN12 e T35). No repasse e no pagamento de encargo, o saldo correspondente (RN11). Fora isso, o limite é 9007199254740991, o maior inteiro que um cliente JSON lê sem perder precisão e bem abaixo do limite do `bigint`, barrado no schema com 400 (DD28).
+* **Teto do saldo (Time, DD37):** o mesmo 9007199254740991 vale para cada saldo da conta. A operação que levaria o disponível ou o reservado acima dele é recusada com **422** (`QIT001029`), sem nada gravado, e o banco confere o mesmo teto numa restrição.
 * **Nas requisições:** inteiro em centavos, no campo `valor_centavos`.
 * **Nas respostas:** inteiro em centavos. Os lançamentos são **sinalizados** (RFC): entrada positiva e saída negativa.
 
@@ -491,7 +492,7 @@ Valem para todas as rotas.
 
 #### Autenticação
 
-Todo pedido leva o header `INTERNAL-TOKEN`. Sem ele, ou com o valor errado, a resposta é **403**. As únicas exceções são `GET /` e `GET /health_check`, que vêm do projeto base.
+Todo pedido leva o header `INTERNAL-TOKEN`. Sem ele, ou com o valor errado, a resposta é **403**. As únicas exceções são `GET /` e `GET /health_check`, que vêm do projeto base. O método `OPTIONS` também exige o token (DD38).
 
 ```http
 INTERNAL-TOKEN: default_token
@@ -513,7 +514,7 @@ Idempotency-Key: 7f3c2a9e-2c1d-4b8e-9a51-0e6d3f1b2c44
 | Mesma chave na mesma conta, requisição diferente: outra rota, outra chave no caminho ou outro corpo (DD18) | **409**, chave reutilizada |
 | Mesma chave em outra conta | **201**, é outra operação (a chave é única por conta, T03) |
 
-Sem o header, com ele vazio ou com mais de 255 caracteres, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32 e DD32).
+Sem o header, com ele vazio ou com mais de 255 caracteres, a resposta é **400** (`QIT000001`), como qualquer pedido fora do formato na base (Time, T32 e DD32). Espaços e tabulações nas pontas do valor não fazem parte da chave, como define o HTTP: `abc`, `abc` seguido de espaço e `abc` seguido de tabulação são a mesma chave, e os 255 caracteres são contados sem eles (DD38).
 
 #### Valores e formatos
 
@@ -524,7 +525,7 @@ Sem o header, com ele vazio ou com mais de 255 caracteres, a resposta é **400**
 | Identificador | a `chave` pública, UUID; o id interno nunca aparece | `"3fbf83e9-e5fc-4e0f-8427-db6a1a50f964"` |
 | Data | `AAAA-MM-DD` | `"2026-10-05"` |
 | Competência | `AAAA-MM` | `"2026-10"` |
-| Documento | CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base | `"529.982.247-25"` |
+| Documento | CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base; o CNPJ aceita também o formato alfanumérico da Receita, com letras maiúsculas nas 12 primeiras posições (DD37) | `"529.982.247-25"`, `"12.ABC.345/01DE-35"` |
 | Lançamento | valor sinalizado: entrada positiva, saída negativa | `-35000` |
 
 #### Formato dos erros
@@ -552,7 +553,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 
 | Código | HTTP | Quando acontece |
 | --- | ---: | --- |
-| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` fora de 1 a 50, `cursor` que não é um lançamento da conta ou que partiria uma transação (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
+| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, texto vazio, só com espaços, com caractere de controle ou com mais de 255 caracteres (DD37), corpo que não é UTF-8 ou JSON legível (DD38), valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` fora de 1 a 50, `cursor` que não é um lançamento da conta ou que partiria uma transação (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
 | `QIT000002` | 403 | sem o `INTERNAL-TOKEN`, ou com o valor errado (projeto base) |
 | `QIT001008` | 422 | documento com o formato certo e os dígitos verificadores errados |
 | `QIT001009` | 409 | documento já cadastrado |
@@ -575,6 +576,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 | `QIT001026` | 422 | repasse com valor bruto maior que zero e menor ou igual à taxa pendente (T40 e DD25) |
 | `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento não estornado da cobrança; ou, na consulta da cobrança, `data` anterior a esse recebimento (DD21) |
 | `QIT001028` | 409 | estorno de um recebimento quando a cobrança tem um recebimento posterior não estornado (DD35) |
+| `QIT001029` | 422 | operação que levaria o saldo disponível ou o reservado acima de 9007199254740991 (DD37) |
 
 Os demais erros gerais (`QIT000404`, `QIT000405` e `QIT000500`) seguem o projeto base.
 
@@ -626,7 +628,7 @@ Antes de implementar cada endpoint, responder:
 
 | Campo | Tipo | Obrigatório | Descrição |
 | --- | --- | --- | --- |
-| `documento` | texto | sim | CPF ou CNPJ, com dígitos verificadores válidos |
+| `documento` | texto | sim | CPF ou CNPJ, numérico ou alfanumérico (DD37), com dígitos verificadores válidos |
 | `nome` | texto | sim | nome do proprietário |
 
 **Exemplo de requisição:**
@@ -1580,11 +1582,11 @@ No projeto base, o schema é um arquivo JSON Schema em `src/schemas/`, conferido
 
 | Campo | Validação |
 | --- | --- |
-| `documento` | obrigatório; CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base, e dígitos só de `0` a `9` (DD28) |
-| `nome` | obrigatório; texto não vazio |
+| `documento` | obrigatório; CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, com a máscara, como na base, e dígitos só de `0` a `9` (DD28); no CNPJ, as 12 primeiras posições aceitam também letras de `A` a `Z`, e os dígitos verificadores continuam numéricos (DD37) |
+| `nome` | obrigatório; de 1 a 255 caracteres, com pelo menos um que não seja espaço e sem caractere de controle ou Unicode inválido; os espaços das pontas são removidos antes de gravar (DD37) |
 | `proprietario_chave` | obrigatório; UUID na forma canônica em minúsculo, como a API emite (fora disso, 400) |
 | `{chave}` (caminho) | UUID da conta, da cobrança ou da transação, conforme a rota (T28); fora do formato canônico em minúsculo (inclusive com espaço no fim, que o `CHAR(36)` ignoraria na comparação), é tratada como inexistente: 404, conferido antes de consultar o banco (DD09) |
-| `imovel_referencia` | obrigatório; texto não vazio |
+| `imovel_referencia` | obrigatório; as mesmas regras do `nome`, e a unicidade por proprietário (RN09) vale depois de tirar os espaços das pontas (DD37) |
 | `politica_imputacao_chave` | obrigatório; UUID (DD08) |
 | `taxa_administracao_bps`, `multa_bps`, `juros_mensal_bps` | obrigatórios; inteiros sem casa decimal (`1000.0` é recusado, DD28); a faixa de 0 a 10000 é regra de negócio (RN10) |
 | `valor_centavos` | obrigatório; inteiro sem casa decimal (`150000.0` é recusado) e no máximo 9007199254740991 (DD28); no repasse, é o valor bruto. O valor menor ou igual a zero é regra de negócio (422, DD06) |
@@ -1709,7 +1711,7 @@ Na ORCA, o cliente é o **proprietário**.
 Proprietario
 - id           bigserial    PK interna
 - chave        char(36)     UNIQUE, identificador público
-- documento    varchar(18)  UNIQUE, unicidade do cadastro; CPF ou CNPJ com a máscara (DD13)
+- documento    varchar(18)  UNIQUE, unicidade do cadastro; CPF ou CNPJ, numérico ou alfanumérico, com a máscara (DD13 e DD37)
 - nome         text
 - criado_em    timestamptz
 ```
@@ -1722,8 +1724,8 @@ Conta
 - chave                   char(36)     UNIQUE, identificador público
 - proprietario_id         bigint       FK para Proprietario
 - imovel_referencia       text         UNIQUE junto com o proprietário: uma conta por imóvel e proprietário
-- saldo_disponivel        bigint       o que pode ser repassado; trava e validação do repasse (T13)
-- saldo_reservado         bigint       o que está guardado para encargos; trava e validação do pagamento de encargo (T13)
+- saldo_disponivel        bigint       o que pode ser repassado; trava e validação do repasse (T13); de 0 a 9007199254740991 (DD37)
+- saldo_reservado         bigint       o que está guardado para encargos; trava e validação do pagamento de encargo (T13); de 0 a 9007199254740991 (DD37)
 - taxa_administracao_bps  int          taxa de administração em pontos-base
 - multa_bps               int          multa do contrato de locação, em pontos-base (T18)
 - juros_mensal_bps        int          juros mensais do contrato de locação, em pontos-base (T18)
@@ -1829,7 +1831,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026 (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36 e a DD38 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1895,7 +1897,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 
 | ID | Detalhe | Derivado de |
 | --- | --- | --- |
-| DD01 | Os códigos do projeto são numerados a partir de `QIT001008` (de `QIT001008` a `QIT001028`), e os dois 409 de saldo têm códigos diferentes (disponível e reservado) | Guia da base: "o próximo livre é o `QIT001008`"; T31 |
+| DD01 | Os códigos do projeto são numerados a partir de `QIT001008` (de `QIT001008` a `QIT001029`), e os dois 409 de saldo têm códigos diferentes (disponível e reservado) | Guia da base: "o próximo livre é o `QIT001008`"; T31 |
 | DD02 | Documento com o formato certo e os dígitos verificadores errados responde **422** (`QIT001008`), e não 400 | Base: o `InvalidDocumentNumber` responde 422 ("li, entendi, e esse valor não pode existir") |
 | DD03 | `limite` do extrato acima de 50 responde **400** (`QIT000001`), porque é barrado no schema; sem o parâmetro, o padrão é 10 | Base: o schema de listagem barra o `limit` pelo `pattern`, e o padrão é 10; T32 |
 | DD04 | Estorno em `POST /transacoes/{chave}/estornos`, sem corpo e sempre da transação inteira (inverte todos os lançamentos); uma transação é estornada no máximo uma vez (UNIQUE em `transacao_estornada_id`), e um estorno não é estornado | T28 (o estorno pertence à transação), T22 e T37 (lançamentos invertidos), T10 (a original não muda) |
@@ -1931,6 +1933,8 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD34 | *Derivado, aguarda revisão:* **repasse.** (a) O repasse gera o lançamento `taxa`, negativo, só quando a taxa pendente é maior que zero, e o lançamento `repasse`, negativo, com o líquido. Sem taxa pendente (`taxa_administracao_bps` zero, ou taxa já retida), há um lançamento só, e a soma continua igual ao valor bruto (RN16); a restrição `valor_centavos <> 0` não admite lançamento zerado. (b) A taxa já retida é a soma dos lançamentos `taxa` da conta com o sinal trocado, então o estorno de um repasse, com o lançamento `taxa` positivo, a devolve à taxa pendente. (c) A taxa é calculada em inteiro, sem ponto flutuante, e fora do SQL: com valores perto do teto da DD28, o produto pelos pontos-base passa do `BIGINT`. (d) Ordem das conferências: valor menor ou igual a zero (422 `QIT001018`), disponível insuficiente (409 `QIT001020`) e valor menor ou igual à taxa pendente (422 `QIT001026`), como no 8.4, que verifica o saldo antes de calcular a tarifa. Sem estorno, a taxa pendente nunca passa do disponível, e os dois últimos não coincidem. Depois de um estorno, ela pode passar: nesse caso, o disponível menor ou igual à taxa pendente fica na conta até entrar mais dinheiro (T40). (e) Com taxa de 10000 bps, um disponível feito só de aluguel não sai da conta, porque todo repasse até ele fica menor ou igual à taxa pendente (T40); a taxa de 100% só é retida junto com dinheiro que não é aluguel. É efeito aceito da T40, sem mudar a RN10. (f) A mesma `Idempotency-Key` usada em outra operação da mesma conta (recebimento, encargo ou repasse) responde 409 (`QIT001022`), porque a operação entra no hash (DD18); em outra conta, é outra operação | RN10, RN16, T16, T38, T40, DD18, DD25, DD26 e DD28 |
 | DD35 | **Estorno.** (a) *Aprovado pelo time em 28/09/2026:* só o último recebimento não estornado da cobrança, na ordem do `pago_em` e do registro, pode ser estornado; estornar um anterior responde 409 (`QIT001028`). Estornar um anterior deixaria os posteriores imputados fora da ordem da política (RN05, RN13 e T20) e moveria dinheiro dos encargos para o disponível. O operador estorna do mais recente para o mais antigo e registra de novo, com outra chave, os recebimentos que valem. *Derivado, aguarda revisão, de (b) a (f):* (b) A posição da cobrança ignora por inteiro o recebimento estornado e o estorno dele: o valor pago por item, a multa e os juros pagos, os trechos da DD20, a ordem da DD21, o status da DD23 e a RN15. A cobrança volta à posição que teria sem ele. (c) A conferência olha o saldo atual: o disponível travado mais a soma invertida, e o reservado de cada natureza (DD33). Ordem: 400 do header, 404 (`QIT001023`), trava, 200 ou 409 (`QIT001022`), 409 (`QIT001024`), 409 (`QIT001028`), 409 (`QIT001020`) e 409 (`QIT001021`), com o condomínio antes do IPTU. (d) Os lançamentos invertidos são gravados na ordem de criação da original, e a resposta os lista na ordem do extrato, como no exemplo da 7.2.11. O `item_cobranca_id` copiado serve à rastreabilidade (T22 e T25), e não ao cálculo; nenhuma rota o mostra. (e) Um corpo enviado ao estorno é ignorado e não entra no hash, que é da operação e da chave da transação (DD18). (f) O estorno de um repasse devolve a taxa dele à taxa pendente (DD34), e o de um encargo devolve o valor ao reservado da natureza | T10, T20, T22, T25, T37, RN05, RN13, DD04, DD18, DD20, DD21, DD23, DD26, DD33 e DD34 |
 | DD36 | *Derivado, aguarda revisão:* **extrato.** (a) A ordem do extrato é a ordem de registro na conta (o id), serializada pela trava da DD16. O `criado_em` é o instante em que a operação começou, com precisão de segundos, e pode não acompanhar essa ordem entre operações concorrentes; por isso o `ultimo_lancamento_em` da 7.2.7, que é o maior `criado_em`, pode diferir do `criado_em` da primeira linha. (b) O `limite` de 1 a 50 é o teto do parâmetro, e não das linhas: a página tem até `limite` linhas mais o resto da última transação, e uma transação grande (por exemplo, um recebimento com muitos itens) pode passar de 50. (c) O filtro `natureza` vale também para completar a transação, e o `proximo_cursor` vem nulo quando não resta linha daquela natureza. (d) Cada linha traz a `transacao_estornada_chave`: nas linhas de um estorno, a chave da transação que ele desfaz; nas outras, `null`. Aguarda a confirmação do time. (e) Parâmetro repetido na query segue a base: vale o último valor. (f) O extrato só lê, sem trava e sem commit | T11, T32, DD03, DD16, DD27, DD35 e 7.2.7 |
+| DD37 | **Endurecimento, decisões do time (29/09/2026).** (a) O CNPJ alfanumérico da Receita (IN RFB 2.229/2024) é aceito: as 12 primeiras posições aceitam letras maiúsculas de `A` a `Z` e dígitos, e os dígitos verificadores continuam numéricos, calculados pelo módulo 11 com o valor de cada caractere igual ao código ASCII menos 48. Letra minúscula responde 400. (b) `nome` e `imovel_referencia` têm de 1 a 255 caracteres, com pelo menos um que não seja espaço; os espaços das pontas são removidos antes de gravar, então o mesmo imóvel com um espaço a mais responde 409 (RN09). Caractere de controle e Unicode inválido (surrogate isolado) respondem 400, porque o PostgreSQL não grava esses valores. (c) A política de imputação é única por nome e versão (`UNIQUE(nome, versao)`, 12.6). (d) Nenhum saldo passa de 9007199254740991: a operação que levaria o disponível ou o reservado acima dele responde 422 (`QIT001029`), sem nada gravado; vale para o recebimento e para o estorno, as duas operações que aumentam saldo, e o banco confere o mesmo teto nas restrições `ck_conta_saldo_*` | Decisão do time de 29/09/2026; DD13, DD28, RN09 e 12.6 |
+| DD38 | *Derivado, aguarda revisão:* **endurecimento das entradas e dos erros.** (a) Um corpo que o FastAPI não consegue ler (bytes que não são UTF-8, inteiro com mais de 4300 dígitos, JSON aninhado demais) responde 400 (`QIT000001`), e não 500. (b) Espaços e tabulações nas pontas da `Idempotency-Key` não fazem parte dela (HTTP, RFC 9110), para que um reenvio com um espaço a mais não movimente o dinheiro de novo; os 255 caracteres são contados depois disso. (c) `OPTIONS` também exige o `INTERNAL-TOKEN`, para que quem não tem o token não descubra as rotas pela diferença entre 404 e 405. (d) A resposta 500 também traz o `X-Request-ID`, e o log registra o erro com o traceback. Como nenhuma entrada de cliente produz mais um 500, não há teste HTTP permanente desse caso; ele foi provado reproduzindo um 500 antes da correção dos textos. (e) O engine do SQLAlchemy usa `hide_parameters`, para que o log de um erro de banco não grave os valores enviados. (f) O índice `ix_lancamento_conta_id` passa a ser `(conta_id, id)`, a ordem do extrato | RFC 7.1 (X-Request-ID e QIT000001), RFC 9110, DD18, DD36 |
 
 ---
 
