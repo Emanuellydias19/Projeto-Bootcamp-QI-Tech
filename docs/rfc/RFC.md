@@ -92,7 +92,7 @@ Listar somente o que será implementado nesta entrega.
 * [x] Controle de saldo
 * [x] Transferência
 * [x] Aplicação de tarifa
-* [ ] Consulta de extrato paginado
+* [x] Consulta de extrato paginado
 
 > Esta seção deve ser confrontada com o escopo oficial do QI Tech.
 
@@ -477,7 +477,7 @@ As rotas genéricas do escopo (`/clientes`, `/transacoes`, `/transferencias`) fo
 | POST | `/cobrancas/{chave}/recebimentos` | Registrar o pagamento do inquilino e imputar o valor sobre a cobrança | `valor_centavos`, `pago_em`; header `Idempotency-Key` | 201 com o rateio aplicado; 200 na repetição idêntica | 409 mesma chave com corpo diferente; 404 cobrança; 422 valor menor ou igual a zero; 422 valor acima do devido na data do pagamento; 422 `pago_em` no futuro ou anterior a um recebimento já registrado |
 | POST | `/contas/{chave}/encargos/pagamentos` | Pagar condomínio ou IPTU com o reservado daquela natureza | `natureza`, `valor_centavos`; header `Idempotency-Key` | 201; 200 na repetição idêntica | 409 reservado da natureza insuficiente; 409 chave repetida com corpo diferente; 404 conta; 422 valor menor ou igual a zero |
 | POST | `/contas/{chave}/repasses` | Reter a taxa e registrar o repasse do líquido ao proprietário (DD11) | `valor_centavos` (bruto); header `Idempotency-Key` | 201 com a taxa e o líquido; 200 na repetição idêntica | 409 disponível insuficiente; 409 chave repetida com corpo diferente; 404 conta; 422 valor menor ou igual a zero; 422 valor bruto menor ou igual à taxa pendente |
-| GET | `/contas/{chave}/extrato` | Listar os lançamentos, do mais recente para o mais antigo | query `cursor`, `limite`, `natureza` | 200 com a página e o `proximo_cursor` | 404 conta; 400 limite acima de 50 |
+| GET | `/contas/{chave}/extrato` | Listar os lançamentos, do mais recente para o mais antigo | query `cursor`, `limite`, `natureza` | 200 com a página e o `proximo_cursor` | 404 conta; 400 limite fora de 1 a 50, natureza fora da lista, parâmetro desconhecido ou `cursor` que não é o último lançamento da sua transação dentro do filtro pedido (DD27) |
 | GET | `/contas/{chave}/saldo` | Devolver os saldos e a data do último lançamento | a chave no caminho | 200 | 404 conta |
 | POST | `/transacoes/{chave}/estornos` | Estornar uma transação, com lançamentos de sinal invertido | header `Idempotency-Key` | 201; 200 na repetição idêntica | 404 transação; 409 transação já estornada ou que é um estorno; 409 recebimento com outro posterior não estornado na cobrança; 409 saldo insuficiente para desfazer; 409 chave repetida com outra transação |
 
@@ -552,7 +552,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 
 | Código | HTTP | Quando acontece |
 | --- | ---: | --- |
-| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` acima de 50, `cursor` que não é um lançamento da conta (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
+| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` fora de 1 a 50, `cursor` que não é um lançamento da conta ou que partiria uma transação (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
 | `QIT000002` | 403 | sem o `INTERNAL-TOKEN`, ou com o valor errado (projeto base) |
 | `QIT001008` | 422 | documento com o formato certo e os dígitos verificadores errados |
 | `QIT001009` | 409 | documento já cadastrado |
@@ -976,7 +976,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 
 **O que devolve?**
 
-> **200** com a página de lançamentos e o `proximo_cursor`. Cada lançamento traz a chave dele, a chave e o tipo da transação, a natureza, o valor sinalizado e a data (T32).
+> **200** com a página de lançamentos e o `proximo_cursor`. Cada lançamento traz a chave dele, a chave e o tipo da transação, a natureza, o valor sinalizado e a data (T32), e a `transacao_estornada_chave`: nas linhas de um estorno, a chave da transação que ele desfaz; nas outras, `null` (DD36).
 
 **Headers:** `INTERNAL-TOKEN`.
 
@@ -987,7 +987,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
 | `cursor` | texto | o `proximo_cursor` da página anterior, que é a chave do último lançamento dela (DD27) |
-| `limite` | inteiro | quantos lançamentos por página: de 1 a 50 (T32), padrão 10, como na base (DD03) |
+| `limite` | inteiro | quantos lançamentos por página: de 1 a 50 (T32), padrão 10, como na base (DD03); a página pode passar dele para não cortar a última transação (DD36) |
 | `natureza` | texto | filtra por natureza; com filtro, o extrato não reconstrói o saldo total |
 
 Qualquer outro parâmetro é recusado com 400, como no projeto base.
@@ -1009,7 +1009,8 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=2
       "tipo": "repasse",
       "natureza": "repasse",
       "valor_centavos": -135000,
-      "criado_em": "2026-10-10T14:02:11Z"
+      "criado_em": "2026-10-10T14:02:11Z",
+      "transacao_estornada_chave": null
     },
     {
       "lancamento_chave": "1b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e",
@@ -1017,7 +1018,8 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=2
       "tipo": "repasse",
       "natureza": "taxa",
       "valor_centavos": -15000,
-      "criado_em": "2026-10-10T14:02:11Z"
+      "criado_em": "2026-10-10T14:02:11Z",
+      "transacao_estornada_chave": null
     }
   ],
   "limite": 2,
@@ -1033,7 +1035,7 @@ O `proximo_cursor` é a chave do último lançamento da página, e não o id int
 
 **Quais situações bloqueiam a operação?**
 
-> Conta inexistente; limite acima de 50; `cursor` que não é um lançamento desta conta (DD27).
+> Conta inexistente; limite fora de 1 a 50; `cursor` que não é um lançamento desta conta, que é de outra natureza que a filtrada, ou que não é o último lançamento da sua transação dentro do filtro pedido (DD27).
 
 **Quais erros podem acontecer?**
 
@@ -1041,10 +1043,10 @@ O `proximo_cursor` é a chave do último lançamento da página, e não o id int
 | --- | ---: | --- |
 | Parâmetro desconhecido ou fora do formato | 400 | `QIT000001` (projeto base) |
 | Conta inexistente (ou não é sua conta) | 404 | `QIT001011` |
-| Limite acima de 50 | 400 | `QIT000001` (projeto base) |
-| `cursor` que não é um lançamento desta conta (DD27) | 400 | `QIT000001` (projeto base) |
+| Limite fora de 1 a 50 | 400 | `QIT000001` (projeto base) |
+| `cursor` que não é um lançamento desta conta, ou que parte uma transação (DD27) | 400 | `QIT000001` (projeto base) |
 
-> **Observação:** com o filtro `natureza`, o extrato mostra só aquela natureza e, sozinho, não reconstrói o saldo total. O `limite` vai até 50 (T32).
+> **Observação:** com o filtro `natureza`, o extrato mostra só aquela natureza e, sozinho, não reconstrói o saldo total. O `limite` vai até 50 (T32), e é o teto do parâmetro: a página termina no fim da última transação e pode passar dele (DD36).
 
 ### 7.2.7 GET /contas/{chave}/saldo
 
@@ -1520,11 +1522,12 @@ Com a conta travada, procura a transação com a mesma Idempotency-Key
 ```text
 GET /contas/{chave}/extrato?cursor=...&limite=...&natureza=...
     ↓
-Validação da query (limite acima de 50 ──> 400)
+Validação da query (limite fora de 1 a 50, natureza fora da lista ou parâmetro desconhecido ──> 400)
     ↓
 Conta existe? ─── não ──> 404
     ↓ sim
-Cursor é um lançamento desta conta? ─── não ──> 400 (DD27)
+Cursor é um lançamento desta conta, da natureza filtrada
+e o último da sua transação dentro do filtro? ─── não ──> 400 (DD27)
     ↓ sim, ou sem cursor
 Lê os lançamentos a partir do cursor, do mais recente para o mais antigo
     ↓
@@ -1593,7 +1596,7 @@ No projeto base, o schema é um arquivo JSON Schema em `src/schemas/`, conferido
 | `natureza` (item incluído depois) | obrigatório; `despesa_extra` (T36) |
 | `data` (consulta da cobrança) | opcional; `AAAA-MM-DD` |
 | `Idempotency-Key` (header) | obrigatório e não vazio nas quatro rotas de movimento (recebimento, encargo, repasse e estorno); sem ele, 400 (T32) |
-| `cursor`, `limite`, `natureza` (extrato) | opcionais; `cursor` no formato UUID (DD27); `limite` inteiro de 1 a 50; nenhum outro parâmetro aceito |
+| `cursor`, `limite`, `natureza` (extrato) | opcionais; `cursor` no formato UUID canônico, em minúsculas (DD27); `limite` inteiro de 1 a 50; `natureza` entre as oito da 12.5; nenhum outro parâmetro aceito |
 
 ---
 
@@ -1629,7 +1632,7 @@ Exemplos:
 | Estorno não deixa negativo o disponível nem o reservado de nenhuma natureza (RN01 e DD33) | Controller, com a conta travada |
 | Unicidade de documento, de conta por imóvel e de chave de idempotência (RN08, RN09, RN03) | Banco, com restrições UNIQUE; o controller só traduz a violação em 409. A repetição da mesma requisição é respondida antes, com 200, pela consulta com a conta travada (DD18) |
 | Ordem de imputação (RN05) | Controller, lendo a política versionada da conta |
-| Cursor do extrato é um lançamento da conta (DD27) | Controller, no extrato; senão, 400 (`QIT000001`) |
+| Cursor do extrato é um lançamento da conta, da natureza filtrada e o último da sua transação dentro do filtro (DD27) | Controller, no extrato; senão, 400 (`QIT000001`) |
 | Recurso pertence ao solicitante | Controller; recurso de outro dono responde 404, igual ao inexistente (T33). Na Fase 1, com o `INTERNAL-TOKEN` único, não há dono de quem chama |
 
 ---
@@ -1826,7 +1829,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD35 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026 (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026 (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1918,7 +1921,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD24 | **Ordem dentro dos encargos: condomínio antes do IPTU.** A política v1 imputa juros, multa, condominio, iptu, aluguel e despesa_extra | T39 e T41; a ordem do exemplo da 7.2.3 |
 | DD25 | **T40 na igualdade:** o repasse com valor bruto maior que zero e menor ou igual à taxa pendente responde 422 (`QIT001026`), porque o líquido seria zero ou negativo. O valor menor ou igual a zero é conferido antes e responde `QIT001018` (DD06) | T40 ("líquido zero ou negativo") |
 | DD26 | **A taxa pendente nunca é negativa** (`max(0, ...)` sobre a fórmula da T38); o estorno de um recebimento cujo aluguel já teve a taxa retida não gera devolução automática da taxa. **Compensação (Time, 28/09/2026):** como a fórmula não guarda sobre qual aluguel cada taxa foi retida, a taxa retida sobre um aluguel estornado é descontada da taxa dos aluguéis que entrarem depois | T38 e T22 |
-| DD27 | **O cursor do extrato é a chave do último lançamento da página.** *Derivado, aguarda revisão:* um cursor que não é um lançamento da conta responde 400 (`QIT000001`), porque o cursor é opaco para o cliente e um valor que a API não emitiu é tratado como parâmetro fora do formato, como o `limite` acima de 50 (DD03) | T08 (o id interno não sai) e T11 |
+| DD27 | **O cursor do extrato é a chave do último lançamento da página.** *Derivado, aguarda revisão:* um cursor que não é um lançamento da conta responde 400 (`QIT000001`), porque o cursor é opaco para o cliente e um valor que a API não emitiu é tratado como parâmetro fora do formato, como o `limite` acima de 50 (DD03). O mesmo 400 vale para um lançamento da conta que não é o último da sua transação dentro do filtro pedido, porque começar dele partiria a transação (T11), e, quando há filtro de natureza, para um cursor de outra natureza. Todo cursor que a API emite passa nessas regras. Sem filtro, a API não distingue um cursor emitido com outro filtro que seja o último da sua transação, e o aceita como ponto de partida. Um cursor na linha mais antiga devolve a página vazia, com `proximo_cursor` nulo | T08 (o id interno não sai) e T11 |
 | DD28 | **Validação de valores e documentos mais rígida que a da base:** centavos e pontos-base só como inteiro, sem casa decimal (`150000.0` e `1000.0` respondem 400); documentos e datas com `[0-9]` no padrão, e não `\d`. *Derivado, aguarda revisão:* o teto dos valores em centavos é 9007199254740991, o maior inteiro que um cliente JSON lê sem perder precisão. O valor menor ou igual a zero continua respondendo 422 (DD06) | T09; o `integer` do jsonschema aceita `150000.0`, e o `\d` aceita dígitos que não são de `0` a `9` |
 | DD29 | **Testes de concorrência nas operações de dinheiro:** requisições em paralelo por HTTP provam que repasses simultâneos não deixam saldo negativo nem divergência entre saldo e extrato, e que duas requisições com a mesma `Idempotency-Key` produzem um efeito só | T01, T02 e T03; a base e a referência não têm teste de concorrência |
 | DD30 | **Código sem comentários:** a intenção fica nos nomes, na estrutura e nos testes, e as decisões ficam neste documento e na descrição dos pull requests | Decisão de estilo do time para a implementação |
@@ -1927,6 +1930,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD33 | *Derivado, aguarda revisão:* **pagamento de encargo.** (a) O reservado de uma natureza é a soma dos lançamentos daquela natureza na conta, lida com a conta travada; um encargo acima dele responde 409 (`QIT001021`) mesmo que o `saldo_reservado` total cubra o valor (RN11). (b) A RN07 é garantida pela recusa inteira: o valor pedido é pago todo ou recusado, nunca em parte. A API não compara o valor com os itens da cobrança nem exige que o reservado da competência esteja completo, porque o valor cobrado pelo credor é informado pelo operador (T23). (c) O encargo gera um lançamento negativo da natureza paga, sem item, e não muda a posição da cobrança (7.2.10), que conta só os recebimentos. (d) O estorno (7.2.11) confere o reservado de cada natureza, e não só o `saldo_reservado` total, com o mesmo `QIT001021`: assim nenhuma natureza fica negativa, e a conferência do encargo pela natureza basta. (e) A soma dos lançamentos de uma transação é o valor pedido com o sinal do movimento: positiva no recebimento, negativa no encargo e no repasse, e a da original com o sinal trocado no estorno (RN16) | RN07, RN11, RN13, RN16, T07, T23 e 7.2.11 |
 | DD34 | *Derivado, aguarda revisão:* **repasse.** (a) O repasse gera o lançamento `taxa`, negativo, só quando a taxa pendente é maior que zero, e o lançamento `repasse`, negativo, com o líquido. Sem taxa pendente (`taxa_administracao_bps` zero, ou taxa já retida), há um lançamento só, e a soma continua igual ao valor bruto (RN16); a restrição `valor_centavos <> 0` não admite lançamento zerado. (b) A taxa já retida é a soma dos lançamentos `taxa` da conta com o sinal trocado, então o estorno de um repasse, com o lançamento `taxa` positivo, a devolve à taxa pendente. (c) A taxa é calculada em inteiro, sem ponto flutuante, e fora do SQL: com valores perto do teto da DD28, o produto pelos pontos-base passa do `BIGINT`. (d) Ordem das conferências: valor menor ou igual a zero (422 `QIT001018`), disponível insuficiente (409 `QIT001020`) e valor menor ou igual à taxa pendente (422 `QIT001026`), como no 8.4, que verifica o saldo antes de calcular a tarifa. Sem estorno, a taxa pendente nunca passa do disponível, e os dois últimos não coincidem. Depois de um estorno, ela pode passar: nesse caso, o disponível menor ou igual à taxa pendente fica na conta até entrar mais dinheiro (T40). (e) Com taxa de 10000 bps, um disponível feito só de aluguel não sai da conta, porque todo repasse até ele fica menor ou igual à taxa pendente (T40); a taxa de 100% só é retida junto com dinheiro que não é aluguel. É efeito aceito da T40, sem mudar a RN10. (f) A mesma `Idempotency-Key` usada em outra operação da mesma conta (recebimento, encargo ou repasse) responde 409 (`QIT001022`), porque a operação entra no hash (DD18); em outra conta, é outra operação | RN10, RN16, T16, T38, T40, DD18, DD25, DD26 e DD28 |
 | DD35 | **Estorno.** (a) *Aprovado pelo time em 28/09/2026:* só o último recebimento não estornado da cobrança, na ordem do `pago_em` e do registro, pode ser estornado; estornar um anterior responde 409 (`QIT001028`). Estornar um anterior deixaria os posteriores imputados fora da ordem da política (RN05, RN13 e T20) e moveria dinheiro dos encargos para o disponível. O operador estorna do mais recente para o mais antigo e registra de novo, com outra chave, os recebimentos que valem. *Derivado, aguarda revisão, de (b) a (f):* (b) A posição da cobrança ignora por inteiro o recebimento estornado e o estorno dele: o valor pago por item, a multa e os juros pagos, os trechos da DD20, a ordem da DD21, o status da DD23 e a RN15. A cobrança volta à posição que teria sem ele. (c) A conferência olha o saldo atual: o disponível travado mais a soma invertida, e o reservado de cada natureza (DD33). Ordem: 400 do header, 404 (`QIT001023`), trava, 200 ou 409 (`QIT001022`), 409 (`QIT001024`), 409 (`QIT001028`), 409 (`QIT001020`) e 409 (`QIT001021`), com o condomínio antes do IPTU. (d) Os lançamentos invertidos são gravados na ordem de criação da original, e a resposta os lista na ordem do extrato, como no exemplo da 7.2.11. O `item_cobranca_id` copiado serve à rastreabilidade (T22 e T25), e não ao cálculo; nenhuma rota o mostra. (e) Um corpo enviado ao estorno é ignorado e não entra no hash, que é da operação e da chave da transação (DD18). (f) O estorno de um repasse devolve a taxa dele à taxa pendente (DD34), e o de um encargo devolve o valor ao reservado da natureza | T10, T20, T22, T25, T37, RN05, RN13, DD04, DD18, DD20, DD21, DD23, DD26, DD33 e DD34 |
+| DD36 | *Derivado, aguarda revisão:* **extrato.** (a) A ordem do extrato é a ordem de registro na conta (o id), serializada pela trava da DD16. O `criado_em` é o instante em que a operação começou, com precisão de segundos, e pode não acompanhar essa ordem entre operações concorrentes; por isso o `ultimo_lancamento_em` da 7.2.7, que é o maior `criado_em`, pode diferir do `criado_em` da primeira linha. (b) O `limite` de 1 a 50 é o teto do parâmetro, e não das linhas: a página tem até `limite` linhas mais o resto da última transação, e uma transação grande (por exemplo, um recebimento com muitos itens) pode passar de 50. (c) O filtro `natureza` vale também para completar a transação, e o `proximo_cursor` vem nulo quando não resta linha daquela natureza. (d) Cada linha traz a `transacao_estornada_chave`: nas linhas de um estorno, a chave da transação que ele desfaz; nas outras, `null`. Aguarda a confirmação do time. (e) Parâmetro repetido na query segue a base: vale o último valor. (f) O extrato só lê, sem trava e sem commit | T11, T32, DD03, DD16, DD27, DD35 e 7.2.7 |
 
 ---
 

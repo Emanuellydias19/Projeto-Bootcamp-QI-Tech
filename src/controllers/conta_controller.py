@@ -1,6 +1,13 @@
 from controllers.base_controller import BaseController
-from dtos import ContaDTO
-from errors import DuplicatedConta, InvalidBps, NotFoundConta, NotFoundPoliticaImputacao, NotFoundProprietario
+from dtos import ContaDTO, LancamentoDTO
+from errors import (
+    DuplicatedConta,
+    InvalidBps,
+    InvalidSchema,
+    NotFoundConta,
+    NotFoundPoliticaImputacao,
+    NotFoundProprietario,
+)
 from models import Conta
 from repositories import ContaRepository, LancamentoRepository, PoliticaImputacaoRepository, ProprietarioRepository
 
@@ -46,3 +53,33 @@ class ContaController(BaseController):
         ultimo_lancamento_em = self.lancamento_repository.get_ultimo_criado_em(conta)
 
         return ContaDTO.saldo_to_dict(conta, ultimo_lancamento_em)
+
+    def get_extrato(self, conta_chave: str, cursor: str, limite: int, natureza: str) -> dict:
+        conta = self._get_or_raise(self.conta_repository, conta_chave, NotFoundConta)
+
+        antes_do_id = None
+        if cursor is not None:
+            lancamento_do_cursor = self.lancamento_repository.get_by_conta_and_chave(conta, cursor)
+
+            if lancamento_do_cursor is None:
+                raise InvalidSchema(f"The cursor {cursor} is not a lancamento of this account.")
+
+            if natureza is not None and lancamento_do_cursor.natureza != natureza:
+                raise InvalidSchema(f"The cursor {cursor} is not a lancamento of the natureza {natureza}.")
+
+            if self.lancamento_repository.has_extrato_da_transacao_antes_do(conta, natureza, lancamento_do_cursor):
+                raise InvalidSchema(f"The cursor {cursor} is not the last lancamento of its transacao in this extrato.")
+
+            antes_do_id = lancamento_do_cursor.id
+
+        linhas = self.lancamento_repository.list_extrato(conta, natureza, antes_do_id, limite)
+        proximo_cursor = None
+
+        if len(linhas) == limite:
+            linhas = linhas + self.lancamento_repository.list_extrato_da_transacao(conta, natureza, linhas[-1][0])
+            ultimo_lancamento = linhas[-1][0]
+
+            if self.lancamento_repository.has_extrato_antes_do_id(conta, natureza, ultimo_lancamento.id):
+                proximo_cursor = ultimo_lancamento.chave
+
+        return LancamentoDTO.extrato_to_dict(linhas, limite, proximo_cursor)
