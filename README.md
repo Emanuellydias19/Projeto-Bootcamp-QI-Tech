@@ -38,7 +38,7 @@
 
 > **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.
 >
-> **Em construção.** A base técnica está pronta: API, banco, Docker, testes, autenticação e erros padronizados. As decisões de modelagem e de contrato (rotas, códigos de erro, limites e acesso) estão fechadas e registradas no [documento de decisões](docs/rfc/RFC.md). As decisões de implementação (DD11 a DD30) e as duas últimas regras de cálculo (T42 e T43) foram aprovadas em 28/09/2026. O código em `src/` hoje traz a entidade de exemplo do projeto base (`sample_entity`), que será substituída aos poucos.
+> **Implementada.** As 11 rotas do contrato estão no ar, cobertas por testes que falam só por HTTP, inclusive os de concorrência: cadastro, conta, saldo, cobrança (com inclusão de item e consulta), recebimento, pagamento de encargo, repasse com a taxa, estorno e extrato. O desenho está no [RFC da ORCA](docs/rfc/rfc-orca.md), e cada decisão, com a alternativa descartada, está no [documento de decisões](docs/rfc/RFC.md). A entidade de exemplo do projeto base (`sample_entity`) continua no código como referência didática da base, fora do escopo da ORCA.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
@@ -116,18 +116,17 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 
 | Item | Status |
 | --- | --- |
-| Cliente (proprietário com CPF/CNPJ validado) | Planejado |
-| Conta (saldo disponível × reservado) | Planejado |
-| Transação (créditos e débitos com natureza) | Planejado |
-| Tarifa (taxa de administração no repasse) | Planejado |
-| Extrato (paginado e discriminado) | Planejado |
-| Regra 1: sem repasse acima do saldo disponível | Planejado |
-| Regra 2: sem baixa sem política de imputação | Planejado |
-| Regra 3: sem lançamento genérico | Planejado |
-| Decisões de modelagem | Fechadas |
-| Decisões de implementação (DD11 a DD30) | Aprovadas |
-| Decisões de contrato (rotas, erros, limites, acesso) | Fechadas |
-| Base técnica (API, banco, Docker, testes, token, erros padronizados) | Pronta |
+| Cliente (proprietário com CPF ou CNPJ, inclusive o alfanumérico, validado) | Pronto |
+| Conta (saldo disponível × reservado) | Pronta |
+| Transação (cobrança, recebimento imputado pela política, pagamento de encargo e estorno) | Pronta |
+| Tarifa (taxa de administração retida no repasse) | Pronta |
+| Extrato (paginado por cursor e discriminado por natureza) | Pronto |
+| Regra 1: sem repasse acima do saldo disponível | Pronta |
+| Regra 2: sem baixa sem política de imputação | Pronta |
+| Regra 3: sem lançamento genérico | Pronta |
+| Concorrência (trava da conta) e idempotência nas quatro operações de dinheiro | Prontas |
+| Decisões de modelagem e de contrato | Fechadas |
+| Decisões de implementação | Registradas (DD11 a DD38); as derivadas aguardam a revisão do time |
 
 ## Tecnologias
 
@@ -162,6 +161,7 @@ O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, 
 | Documento | O que tem |
 | --- | --- |
 | [docs/como-rodar.md](docs/como-rodar.md) | Instalação, execução, testes e problemas comuns. |
+| [docs/rfc/rfc-orca.md](docs/rfc/rfc-orca.md) | O RFC da ORCA no formato oficial do Bootcamp: o problema, a solução, as rotas, o diagrama do banco, os fluxos e o principal desafio. |
 | [docs/rfc/RFC.md](docs/rfc/RFC.md) | O documento de decisões da API: domínio, regras de negócio, rotas, fluxos, modelo de dados e as decisões tomadas e em aberto. |
 | [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca-modelo-dados.erd.json) | O diagrama do banco de dados, para abrir no ERD Editor do VS Code. |
 | [docs/como-o-projeto-e-organizado.md](docs/como-o-projeto-e-organizado.md) | A arquitetura: o caminho de uma requisição, o que cada pasta pode e não pode fazer e onde mexer para cada tipo de mudança. |
