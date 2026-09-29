@@ -85,6 +85,16 @@ class RequestGenerator:
         return response.response_status, response.response_json
 
     @staticmethod
+    def GET_conta_extrato(conta_chave: str, params: dict = None) -> tuple:
+        response = ClientRequisition.send(
+            "GET",
+            f"/contas/{conta_chave}/extrato",
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+            query_params=params,
+        )
+        return response.response_status, response.response_json
+
+    @staticmethod
     def POST_conta_cobrancas(conta_chave: str, cobranca_payload: dict) -> tuple:
         response = ClientRequisition.send(
             "POST",

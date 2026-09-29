@@ -71,3 +71,28 @@ class ObjectGenerator:
         assert status == 201
 
         return response
+
+    @staticmethod
+    def create_repasse(conta_chave: str, valor_centavos: int) -> dict:
+        repasse_payload = PayloadGenerator.create_repasse_payload(valor_centavos)
+
+        status, response = RequestGenerator.POST_conta_repasses(conta_chave, repasse_payload)
+        assert status == 201
+
+        return response
+
+    @staticmethod
+    def create_encargo_pagamento(conta_chave: str, natureza: str, valor_centavos: int) -> dict:
+        encargo_payload = PayloadGenerator.create_encargo_payload(natureza, valor_centavos)
+
+        status, response = RequestGenerator.POST_conta_encargo_pagamentos(conta_chave, encargo_payload)
+        assert status == 201
+
+        return response
+
+    @staticmethod
+    def create_estorno(transacao_chave: str) -> dict:
+        status, response = RequestGenerator.POST_transacao_estornos(transacao_chave)
+        assert status == 201
+
+        return response

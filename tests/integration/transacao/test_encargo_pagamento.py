@@ -9,6 +9,8 @@ from tests.utils import (
     ObjectGenerator,
     PayloadGenerator,
     RequestGenerator,
+    extrato_completo,
+    saldos_pelo_extrato,
     today_in_sao_paulo,
 )
 from tests.utils.requisition import ClientRequisition
@@ -299,6 +301,8 @@ class TestEncargoPagamento:
 
         assert saldos(conta_chave) == {"disponivel": 150000, "reservado": 20000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
+
 
 class TestEncargoPagamentoIdempotencia:
     def test_returns_the_original_result_when_repeated(self):
@@ -443,3 +447,5 @@ class TestEncargoPagamentoIdempotencia:
             assert body == bodies[0]
 
         assert saldos(conta_chave) == {"disponivel": 150000, "reservado": 15000}
+
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)

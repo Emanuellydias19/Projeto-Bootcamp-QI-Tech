@@ -9,6 +9,8 @@ from tests.utils import (
     ObjectGenerator,
     PayloadGenerator,
     RequestGenerator,
+    extrato_completo,
+    saldos_pelo_extrato,
     today_in_sao_paulo,
 )
 from tests.utils.requisition import ClientRequisition
@@ -691,6 +693,8 @@ class TestEstorno:
 
         assert saldos(conta["conta_chave"]) == {"disponivel": 150000, "reservado": 50000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])
+
     def test_keeps_the_saldos_consistent_when_estorno_and_repasses_arrive_at_the_same_time(self):
         conta = conta_com_recebimento()
         repasse_payload = PayloadGenerator.create_repasse_payload(30000)
@@ -719,6 +723,8 @@ class TestEstorno:
             assert repasses_aceitos == SIMULTANEOUS_REQUESTS - 1
             assert saldos(conta["conta_chave"]) == {"disponivel": 30000, "reservado": 50000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])
+
     def test_keeps_the_cobranca_consistent_when_estorno_and_recebimento_arrive_at_the_same_time(self):
         conta = conta_com_recebimento()
         payload = PayloadGenerator.create_recebimento_payload(200000, VENCIMENTO.isoformat())
@@ -740,6 +746,8 @@ class TestEstorno:
             assert recebimento_result[1]["code"] == "QIT001019"
             assert posicao(conta["cobranca_chave"])["status"] == "aberta"
             assert saldos(conta["conta_chave"]) == {"disponivel": 0, "reservado": 0}
+
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])
 
     def test_keeps_the_imputacao_in_order_when_estorno_and_a_later_recebimento_arrive_at_the_same_time(self):
         payload = PayloadGenerator.create_recebimento_payload(150000, VENCIMENTO.isoformat())
@@ -773,6 +781,8 @@ class TestEstorno:
                 assert posicao(cobranca_chave)["status"] == "quitada"
                 assert saldos(conta_chave) == {"disponivel": 150000, "reservado": 50000}
 
+            assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
+
     def test_keeps_the_reserve_right_when_estorno_and_encargo_arrive_at_the_same_time(self):
         conta = conta_com_recebimento()
         encargo_payload = PayloadGenerator.create_encargo_payload("condominio", 35000)
@@ -794,6 +804,8 @@ class TestEstorno:
             assert encargo_result[0] == 201
             assert saldos(conta["conta_chave"]) == {"disponivel": 150000, "reservado": 15000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])
+
     def test_keeps_the_cobranca_consistent_when_estorno_and_item_arrive_at_the_same_time(self):
         conta = conta_com_recebimento()
         item = PayloadGenerator.create_item_payload()
@@ -813,6 +825,8 @@ class TestEstorno:
             assert item_result[0] == 409
             assert item_result[1]["code"] == "QIT001017"
             assert len(posicao(conta["cobranca_chave"], today_in_sao_paulo())["itens"]) == 3
+
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])
 
 
 class TestEstornoIdempotencia:
@@ -918,3 +932,5 @@ class TestEstornoIdempotencia:
             assert body == bodies[0]
 
         assert saldos(conta["conta_chave"]) == {"disponivel": 150000, "reservado": 50000}
+
+        assert saldos_pelo_extrato(extrato_completo(conta["conta_chave"])) == saldos(conta["conta_chave"])

@@ -8,6 +8,8 @@ from tests.utils import (
     ObjectGenerator,
     PayloadGenerator,
     RequestGenerator,
+    extrato_completo,
+    saldos_pelo_extrato,
     today_in_sao_paulo,
 )
 from tests.utils.requisition import ClientRequisition
@@ -425,3 +427,5 @@ class TestRecebimento:
         assert statuses.count(422) == 1
         assert saldos(cobranca["conta_chave"]) == {"disponivel": 200000, "reservado": 0}
         assert posicao(cobranca["cobranca_chave"], vencimento)["status"] == "quitada"
+
+        assert saldos_pelo_extrato(extrato_completo(cobranca["conta_chave"])) == saldos(cobranca["conta_chave"])

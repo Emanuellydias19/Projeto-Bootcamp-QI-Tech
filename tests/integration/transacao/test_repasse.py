@@ -9,6 +9,8 @@ from tests.utils import (
     ObjectGenerator,
     PayloadGenerator,
     RequestGenerator,
+    extrato_completo,
+    saldos_pelo_extrato,
     today_in_sao_paulo,
 )
 from tests.utils.requisition import ClientRequisition
@@ -407,6 +409,10 @@ class TestRepasse:
 
         assert saldos(conta_chave) == {"disponivel": 30000, "reservado": 50000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
+        assert extrato_completo(conta_chave, {"natureza": "taxa"})[0]["valor_centavos"] == -15000
+        assert len(extrato_completo(conta_chave, {"natureza": "taxa"})) == 1
+
     def test_retains_the_taxa_only_once_when_repasses_arrive_at_the_same_time(self):
         conta_chave = conta_com_recebimento()
         payload = PayloadGenerator.create_repasse_payload(20000)
@@ -424,6 +430,9 @@ class TestRepasse:
 
         assert saldos(conta_chave) == {"disponivel": 50000, "reservado": 50000}
 
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
+        assert len(extrato_completo(conta_chave, {"natureza": "taxa"})) == 1
+
     def test_keeps_both_saldos_right_when_encargos_and_repasses_arrive_at_the_same_time(self):
         conta_chave = conta_com_recebimento()
         repasse_payload = PayloadGenerator.create_repasse_payload(20000)
@@ -440,6 +449,8 @@ class TestRepasse:
             assert status == 201
 
         assert saldos(conta_chave) == {"disponivel": 50000, "reservado": 25000}
+
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
 
 
 class TestRepasseIdempotencia:
@@ -566,3 +577,6 @@ class TestRepasseIdempotencia:
             assert body == bodies[0]
 
         assert saldos(conta_chave) == {"disponivel": 100000, "reservado": 50000}
+
+        assert saldos_pelo_extrato(extrato_completo(conta_chave)) == saldos(conta_chave)
+        assert len(extrato_completo(conta_chave, {"natureza": "repasse"})) == 1

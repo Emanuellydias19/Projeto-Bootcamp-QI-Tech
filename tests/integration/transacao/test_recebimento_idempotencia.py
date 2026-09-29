@@ -1,7 +1,15 @@
 from datetime import timedelta
 from uuid import uuid4
 
-from tests.utils import ConcurrentRequests, ObjectGenerator, PayloadGenerator, RequestGenerator, today_in_sao_paulo
+from tests.utils import (
+    ConcurrentRequests,
+    ObjectGenerator,
+    PayloadGenerator,
+    RequestGenerator,
+    extrato_completo,
+    saldos_pelo_extrato,
+    today_in_sao_paulo,
+)
 
 
 SIMULTANEOUS_REQUESTS = 5
@@ -158,3 +166,6 @@ class TestRecebimentoIdempotencia:
             assert body == bodies[0]
 
         assert saldo_total(conta_chave) == 50000
+
+        pelo_extrato = saldos_pelo_extrato(extrato_completo(conta_chave))
+        assert pelo_extrato["disponivel"] + pelo_extrato["reservado"] == 50000
