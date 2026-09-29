@@ -5,6 +5,8 @@ from models import Proprietario
 from repositories import ProprietarioRepository
 from utils.document_number import is_valid_cnpj, is_valid_cpf
 
+CPF_WITH_MASK_LENGTH = 14
+
 
 class ProprietarioController(BaseController):
     def __init__(self) -> None:
@@ -16,7 +18,12 @@ class ProprietarioController(BaseController):
 
         documento = proprietario_data["documento"]
 
-        if not is_valid_cpf(documento) and not is_valid_cnpj(documento):
+        if len(documento) == CPF_WITH_MASK_LENGTH:
+            documento_valido = is_valid_cpf(documento)
+        else:
+            documento_valido = is_valid_cnpj(documento)
+
+        if not documento_valido:
             raise InvalidDocumento()
 
         proprietario = self.proprietario_repository.create({**proprietario_data, "nome": proprietario_data["nome"].strip()})
