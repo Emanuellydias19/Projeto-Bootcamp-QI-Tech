@@ -64,9 +64,9 @@ Descrever o que a API permitirá fazer para resolver o problema.
 
 **Resposta (Time).**
 
-> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel. Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.**
+> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel. Ela registra e controla de quem é cada valor, para que ele está reservado e quanto pode ser repassado. Ela não executa PIX nem boleto.**
 
-O título do RFC continua "Conta corrente do proprietário", porque o enunciado da QI Tech fala em "conta" e o título ecoa o enunciado de propósito. Na apresentação, a primeira frase é a do livro-caixa: ela evita a pergunta "então vocês estão fazendo um banco?".
+O título do RFC continua "Conta corrente do proprietário", porque o enunciado da QI Tech fala em "conta" e o título ecoa o enunciado de propósito. O enunciado pede um protótipo bancário ("é construir um banco", aula de 12/09), e a ORCA é o núcleo desse banco dentro da administradora: contas, saldo, transações, tarifa e extrato. O que ela não faz é liquidar o dinheiro no sistema bancário, executando o PIX ou o boleto, porque isso não faz parte de um protótipo.
 
 Ao final da Fase 1, o sistema será capaz de:
 

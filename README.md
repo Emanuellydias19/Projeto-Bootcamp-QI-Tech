@@ -36,7 +36,7 @@
 
 ---
 
-> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.
+> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** É o núcleo de um banco dentro da administradora: contas, saldo, transações, tarifa e extrato. Ela registra e controla de quem é cada valor, para que ele está reservado e quanto pode ser repassado. Ela não executa PIX nem boleto: liquidar o dinheiro no sistema bancário não faz parte de um protótipo.
 >
 > **Implementada.** As 11 rotas do contrato estão no ar, cobertas por testes que falam só por HTTP, inclusive os de concorrência: cadastro, conta, saldo, cobrança (com inclusão de item e consulta), recebimento, pagamento de encargo, repasse com a taxa, estorno e extrato. O desenho está no [RFC da ORCA](docs/rfc/rfc-orca.md), e cada decisão, com a alternativa descartada, está no [documento de decisões](docs/rfc/RFC.md). A entidade de exemplo do projeto base (`sample_entity`) continua no código como referência didática da base, fora do escopo da ORCA.
 
