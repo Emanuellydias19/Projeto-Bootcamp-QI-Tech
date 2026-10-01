@@ -143,7 +143,7 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 
 ## Começando
 
-Você precisa de **Docker Desktop**, **Git** e **Python 3.12**. Com eles instalados:
+Você precisa de **Docker Desktop**, **Git** e **Python 3.12 ou mais novo** (só para os testes). Com eles instalados:
 
 ```bash
 git clone https://github.com/Emanuellydias19/Projeto-Bootcamp-QI-Tech.git
@@ -154,7 +154,7 @@ docker compose up --build
 
 Abra <http://localhost:3000>: se aparecer `{"service":"bootcamp-api",...}`, está funcionando.
 
-O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, com os testes, as particularidades do Windows e as soluções para os erros mais comuns.
+O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, com os testes, as particularidades do Windows, as soluções para os erros mais comuns e um [passeio pelas rotas da ORCA](docs/como-rodar.md#6-um-passeio-pelas-rotas-da-orca) com `curl`.
 
 ## Documentação
 

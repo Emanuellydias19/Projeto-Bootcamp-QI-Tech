@@ -1,5 +1,7 @@
 # Documento de Decisões da API
 
+> Este é o documento de decisões da ORCA: o detalhe de cada regra, contrato e decisão, com a alternativa descartada. O RFC no formato oficial do Bootcamp, curto, é o [rfc-orca.md](rfc-orca.md).
+>
 > Documento de apoio à implementação.
 > Reúne as decisões de domínio, regras, fluxos e contrato que devem estar definidos antes do início da codificação.
 
@@ -911,7 +913,7 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/encargos/pagamentos
 | --- | --- | --- | --- |
 | `valor_centavos` | inteiro | sim | o valor **bruto**; a taxa sai de dentro dele |
 
-Exemplo: repasse do aluguel de R$ 1.500,00, com taxa de 10% sobre o aluguel.
+Exemplo: a conta do exemplo da 7.2.3, depois do recebimento de R$ 1.800,00, que quitou R$ 1.300,00 de aluguel, e do pagamento do condomínio da 7.2.4. O repasse é de todo o disponível, com taxa de 10% sobre o aluguel quitado.
 
 **Exemplo de requisição:**
 
@@ -921,18 +923,18 @@ POST /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/repasses
 
 ```json
 {
-  "valor_centavos": 150000
+  "valor_centavos": 130000
 }
 ```
 
-**Exemplo de resposta 201:** a taxa e o líquido separados. A taxa pendente é `⌊aluguel quitado × 1000 ÷ 10000⌋ − taxa já retida` = 15000 − 0 = 15000 (T38).
+**Exemplo de resposta 201:** a taxa e o líquido separados. A taxa pendente é `⌊aluguel quitado × 1000 ÷ 10000⌋ − taxa já retida` = ⌊130000 × 1000 ÷ 10000⌋ − 0 = 13000 (T38).
 
 ```json
 {
   "transacao_chave": "f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13",
-  "valor_bruto_centavos": 150000,
-  "taxa_centavos": 15000,
-  "liquido_centavos": 135000
+  "valor_bruto_centavos": 130000,
+  "taxa_centavos": 13000,
+  "liquido_centavos": 117000
 }
 ```
 
@@ -1011,7 +1013,7 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=2
       "transacao_chave": "f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13",
       "tipo": "repasse",
       "natureza": "repasse",
-      "valor_centavos": -135000,
+      "valor_centavos": -117000,
       "criado_em": "2026-10-10T14:02:11Z",
       "transacao_estornada_chave": null
     },
@@ -1020,7 +1022,7 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/extrato?limite=2
       "transacao_chave": "f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13",
       "tipo": "repasse",
       "natureza": "taxa",
-      "valor_centavos": -15000,
+      "valor_centavos": -13000,
       "criado_em": "2026-10-10T14:02:11Z",
       "transacao_estornada_chave": null
     }
@@ -1341,8 +1343,8 @@ POST /transacoes/f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13/estornos
   "transacao_chave": "9b7e5c3a-1d2f-4e6a-8b0c-2d4f6a8c0e35",
   "transacao_estornada_chave": "f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13",
   "lancamentos": [
-    { "natureza": "repasse", "valor_centavos": 135000 },
-    { "natureza": "taxa", "valor_centavos": 15000 }
+    { "natureza": "repasse", "valor_centavos": 117000 },
+    { "natureza": "taxa", "valor_centavos": 13000 }
   ]
 }
 ```
