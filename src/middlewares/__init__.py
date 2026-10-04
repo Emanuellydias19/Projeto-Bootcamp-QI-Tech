@@ -1,4 +1,6 @@
+from middlewares.body_limit import register_body_limit_middleware
 from middlewares.internal_token import register_internal_token_middleware
+from middlewares.metrics import register_metrics_middleware
 from middlewares.request_context import register_request_context_middleware
 from middlewares.request_logger import register_request_logger_middleware
 from middlewares.session_manager import register_session_manager_middleware

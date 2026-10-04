@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from errors.base_error import (
@@ -10,12 +11,16 @@ from errors.base_error import (
     InvalidSchema,
     MethodNotAllowed,
     NotFoundResource,
+    ServiceUnavailable,
 )
 from utils.logger import get_logger
 from utils.request_context import REQUEST_ID_HEADER, get_request_id
 
 
 logger = get_logger(__name__)
+
+DATABASE_TIMEOUT_CODES = ["55P03", "57014"]
+RETRY_AFTER_SECONDS = "1"
 
 
 def qi_exception_to_response(exception: QIException) -> JSONResponse:
@@ -98,6 +103,19 @@ def register_error_handlers(application: FastAPI) -> None:
             return qi_exception_to_response(InvalidParameter(description))
 
         return qi_exception_to_response(InvalidSchema(description))
+
+    @application.exception_handler(OperationalError)
+    def handle_database_timeout(request: Request, exception: OperationalError) -> JSONResponse:
+        pgcode = getattr(exception.orig, "pgcode", None)
+
+        if pgcode is None or pgcode in DATABASE_TIMEOUT_CODES:
+            logger.warning(f"O banco nao respondeu a tempo em {request.method} {request.url.path}", extra={"pgcode": pgcode})
+            response = qi_exception_to_response(ServiceUnavailable("The database did not answer in time."))
+            response.headers["Retry-After"] = RETRY_AFTER_SECONDS
+            return response
+
+        logger.error(f"Erro de banco em {request.method} {request.url.path}", exc_info=exception)
+        return qi_exception_to_response(InternalError())
 
     @application.exception_handler(Exception)
     def handle_unexpected_error(request: Request, exception: Exception) -> JSONResponse:

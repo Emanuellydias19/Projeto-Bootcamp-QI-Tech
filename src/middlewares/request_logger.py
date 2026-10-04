@@ -14,7 +14,7 @@ def register_request_logger_middleware(application: FastAPI) -> None:
 
     Quando algo der errado em produção, é esta linha de log que conta
     a história: qual rota, qual status, quanto tempo demorou — e, no
-    colchete que o logger acrescenta sozinho, o identificador da
+    campo request_id que o logger acrescenta sozinho, o identificador da
     requisição, que junta as duas linhas (a de entrada e a de saída) e
     tudo o que aconteceu entre elas.
 
@@ -28,7 +28,7 @@ def register_request_logger_middleware(application: FastAPI) -> None:
       dedo, nunca o objeto inteiro.
 
     • **Não fala das rotas de BYPASS_ENDPOINTS.** O Docker consulta o
-      /health_check a cada três segundos; sem esta linha, o log seria
+      /health_check/ready a cada três segundos; sem esta linha, o log seria
       quase só isso.
     """
 
@@ -50,11 +50,19 @@ def register_request_logger_middleware(application: FastAPI) -> None:
             requested_path = f"{requested_path}?{request.url.query}"
 
         started_at = time.perf_counter()
-        logger.info(f"ENTROU {request.method} {requested_path}")
+        logger.info(f"ENTROU {request.method} {requested_path}", extra={"method": request.method, "path": requested_path})
 
         response = await call_next(request)
 
         elapsed_ms = (time.perf_counter() - started_at) * 1000
-        logger.info(f"SAIU {response.status_code} {request.method} {request.url.path} - {elapsed_ms:.1f} ms")
+        logger.info(
+            f"SAIU {response.status_code} {request.method} {request.url.path} - {elapsed_ms:.1f} ms",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "duration_ms": round(elapsed_ms, 1),
+            },
+        )
 
         return response

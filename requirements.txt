@@ -20,3 +20,4 @@ psycopg2-binary==2.9.13
 # externa fica solta no meio do codigo.
 requests==2.32.3
 tzdata==2026.4
+prometheus-client==0.26.0

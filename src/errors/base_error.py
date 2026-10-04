@@ -75,6 +75,38 @@ class InvalidSchema(QIException):
         super().__init__(title, self.code, http_status, description, translation)
 
 
+class PayloadTooLarge(QIException):
+    code = "QIT000413"
+
+    def __init__(self, maximum_bytes) -> None:
+        title = "Payload Too Large"
+        http_status = 413
+        description = f"The request body must have at most {maximum_bytes} bytes."
+        translation = "O corpo da requisição é maior que o permitido."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class LengthRequired(QIException):
+    code = "QIT000411"
+
+    def __init__(self) -> None:
+        title = "Length Required"
+        http_status = 411
+        description = "The request body must be sent with a Content-Length header."
+        translation = "O corpo da requisição precisa vir com o tamanho declarado."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
+class ServiceUnavailable(QIException):
+    code = "QIT000503"
+
+    def __init__(self, description) -> None:
+        title = "Service Unavailable"
+        http_status = 503
+        translation = "O serviço está indisponível agora; tente de novo em instantes."
+        super().__init__(title, self.code, http_status, description, translation)
+
+
 class ForbiddenNotInternal(QIException):
     code = "QIT000002"
 

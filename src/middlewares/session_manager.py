@@ -53,7 +53,7 @@ def register_session_manager_middleware(application: FastAPI) -> None:
     ────────────────────────────────────────────────────────────────
     Essa é a objeção certa, e é o preço de trazer a sessão pra cá: a
     dependency só era chamada por quem pedia, e o middleware atende todo
-    mundo. O Docker consulta o /health_check a cada três segundos, e
+    mundo. Quem vigia o processo consulta o /health_check a cada poucos segundos, e
     seria ruim que cada checagem tomasse uma conexão emprestada por nada
     — pior ainda: o health check passaria a depender do banco estar de
     pé, e uma lentidão no banco derrubaria um container que ainda estava

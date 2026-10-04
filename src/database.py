@@ -98,10 +98,20 @@ from typing import Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from constants import DATABASE_URL
+from constants import DATABASE_URL, DB_CONNECT_TIMEOUT_SECONDS, DB_LOCK_TIMEOUT_MS, DB_STATEMENT_TIMEOUT_MS
 
 
-engine = create_engine(DATABASE_URL, pool_size=5, pool_recycle=600, pool_pre_ping=True, hide_parameters=True)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=5,
+    pool_recycle=600,
+    pool_pre_ping=True,
+    hide_parameters=True,
+    connect_args={
+        "connect_timeout": DB_CONNECT_TIMEOUT_SECONDS,
+        "options": f"-c lock_timeout={DB_LOCK_TIMEOUT_MS} -c statement_timeout={DB_STATEMENT_TIMEOUT_MS}",
+    },
+)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
