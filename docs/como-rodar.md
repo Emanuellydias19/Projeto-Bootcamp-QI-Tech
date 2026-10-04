@@ -66,7 +66,7 @@ Depois, sempre com a API de pé e `(healthy)` em `docker compose ps`:
 pytest
 ```
 
-O resultado esperado é `287 passed`, em cerca de 1 minuto. Para rodar um arquivo só: `pytest -v tests/integration/test_healthcheck.py`.
+O resultado esperado é `301 passed`, em 1 a 4 minutos, conforme a máquina. Para rodar um arquivo só: `pytest -v tests/integration/test_healthcheck.py`.
 
 Para conferir o estilo do código com as regras do `.flake8`, rode `python -m flake8 .`. O resultado esperado é nenhuma linha de saída.
 
@@ -79,7 +79,7 @@ Para conferir o estilo do código com as regras do `.flake8`, rode `python -m fl
 | Desligar | `Ctrl+C` no terminal da API e depois `docker compose down` |
 | Ligar de novo | `docker compose up` |
 | Recriar o banco do zero (necessário depois de mudar `database/database.sql`) | `docker compose down -v` e depois `docker compose up --build`. O `--build` é obrigatório: o `database.sql` é copiado para dentro da imagem do banco, e sem ele o banco nasce com o arquivo antigo |
-| Ver o log da API | `docker compose logs -f api` |
+| Ver o log da API | `docker compose logs -f api`. Cada linha é um JSON; para seguir uma requisição, filtre pelo `X-Request-ID` que ela devolveu: `docker compose logs api \| grep <X-Request-ID>` |
 
 ## 6. Um passeio pelas rotas da ORCA
 
@@ -171,5 +171,6 @@ TOKEN=default_token
 | `Não consegui falar com a API em http://0.0.0.0:3000` | Faltou a troca `SERVER_LOCALHOST=localhost` no `.env` (passo 2). |
 | `AssertionError ... TypingOnly` | O `.venv` tem uma versão antiga do SQLAlchemy. Com o `.venv` ativo, rode `pip install -r requirements-dev.txt` de novo. |
 | `relation "..." does not exist` | O `database.sql` mudou e o banco é antigo. Rode `docker compose down -v` e `docker compose up --build`. |
+| `No module named 'prometheus_client'` no log da API | A imagem da API é anterior à dependência nova. Rode `docker compose up --build`. |
 
-O contrato completo de cada rota, com os códigos de erro, está no [documento de decisões](rfc/RFC.md#7-contrato-da-api). O [guia da API base](guia-da-api-base.md) mostra as rotas de exemplo do projeto base (`sample_entity`), que continuam no código como referência.
+O contrato completo de cada rota, com os códigos de erro, está no [documento de decisões](rfc/RFC.md#7-contrato-da-api). Logs, métricas, saúde e os limites de produção estão em [producao.md](producao.md). O [guia da API base](guia-da-api-base.md) mostra as rotas de exemplo do projeto base (`sample_entity`), que continuam no código como referência.

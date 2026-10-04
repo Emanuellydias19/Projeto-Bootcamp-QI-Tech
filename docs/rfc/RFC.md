@@ -453,7 +453,7 @@ Precisamos decidir:
 > * **Consultar uma conta:** o operador da administradora (RFC).
 > * **Realizar um repasse:** o operador da administradora (RFC).
 > * **Consultar o extrato:** o operador e o proprietário da conta (RFC).
-> * **Como identificamos o dono do recurso:** o **controle de acesso por perfil está fora do escopo** (RFC). A autenticação disponível hoje é a do projeto base: o header `INTERNAL-TOKEN`, igual para todos os chamadores e exigido em todas as rotas, exceto `/` e `/health_check`.
+> * **Como identificamos o dono do recurso:** o **controle de acesso por perfil está fora do escopo** (RFC). A autenticação disponível hoje é a do projeto base: o header `INTERNAL-TOKEN`, igual para todos os chamadores e exigido em todas as rotas, exceto `/`, `/health_check` e `/health_check/ready` (DD39).
 > * **Recurso que não lhe pertence:** "404 e 'não é sua conta' respondem igual, para não confirmar a existência de conta alheia" (RFC).
 >
 > **Decisão (Time, T33):** o recurso de outro dono responde **404**, igual ao inexistente, sem revelar que ele existe. Na Fase 1, o `INTERNAL-TOKEN` é o mesmo para todos, então a API não sabe quem é o dono de quem chama: na prática, só acontece o 404 de recurso inexistente. Quando o controle de acesso por perfil entrar, a regra já está escrita e continua 404.
@@ -483,8 +483,10 @@ As rotas genéricas do escopo (`/clientes`, `/transacoes`, `/transferencias`) fo
 | GET | `/contas/{chave}/extrato` | Listar os lançamentos, do mais recente para o mais antigo | query `cursor`, `limite`, `natureza` | 200 com a página e o `proximo_cursor` | 404 conta; 400 limite fora de 1 a 50, natureza fora da lista, parâmetro desconhecido ou `cursor` que não é o último lançamento da sua transação dentro do filtro pedido (DD27) |
 | GET | `/contas/{chave}/saldo` | Devolver os saldos e a data do último lançamento | a chave no caminho | 200 | 404 conta |
 | POST | `/transacoes/{chave}/estornos` | Estornar uma transação, com lançamentos de sinal invertido | header `Idempotency-Key` | 201; 200 na repetição idêntica | 404 transação; 409 transação já estornada ou que é um estorno; 409 recebimento com outro posterior não estornado na cobrança; 409 saldo insuficiente para desfazer; 409 chave repetida com outra transação |
+| GET | `/health_check/ready` | Dizer se a API está pronta para tráfego, consultando o banco (DD39) | nenhuma; dispensa o token | 200 com `{"status": "pronto", "banco": "ok"}` | 503 banco sem resposta |
+| GET | `/metrics` | Expor as métricas RED no formato de texto do Prometheus (DD39) | nenhuma | 200 | 403 sem o token |
 
-Todas as rotas acima também exigem o header `INTERNAL-TOKEN` do projeto base (sem ele, **403**).
+Todas as rotas acima, menos a `/health_check/ready`, também exigem o header `INTERNAL-TOKEN` do projeto base (sem ele, **403**). As duas últimas são operacionais: servem ao orquestrador e ao monitoramento, e estão explicadas em [producao.md](../producao.md).
 
 As rotas da **cobrança** (T25 e T28) estão detalhadas em 7.2.8, 7.2.9 e 7.2.10, e a do estorno (T37 e DD04) em 7.2.11. Os campos `multa_bps` e `juros_mensal_bps` na abertura de conta vêm da decisão T18.
 
@@ -494,7 +496,7 @@ Valem para todas as rotas.
 
 #### Autenticação
 
-Todo pedido leva o header `INTERNAL-TOKEN`. Sem ele, ou com o valor errado, a resposta é **403**. As únicas exceções são `GET /` e `GET /health_check`, que vêm do projeto base. O método `OPTIONS` também exige o token (DD38).
+Todo pedido leva o header `INTERNAL-TOKEN`. Sem ele, ou com o valor errado, a resposta é **403**. As únicas exceções são `GET /` e `GET /health_check`, que vêm do projeto base, e `GET /health_check/ready` (DD39). O método `OPTIONS` também exige o token (DD38).
 
 ```http
 INTERNAL-TOKEN: default_token
@@ -555,8 +557,11 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 
 | Código | HTTP | Quando acontece |
 | --- | ---: | --- |
-| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, texto vazio, só com espaços, com caractere de controle ou com mais de 255 caracteres (DD37), corpo que o leitor de JSON não consegue decodificar (DD38), valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, `limite` fora de 1 a 50, `cursor` que não é um lançamento da conta ou que partiria uma transação (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
+| `QIT000001` | 400 | corpo, query ou header fora do formato: campo faltando, tipo errado, texto vazio, só com espaços, com caractere de controle ou com mais de 255 caracteres (DD37), corpo que o leitor de JSON não consegue decodificar (DD38), valor em centavos ou em pontos-base com casa decimal, valor acima de 9007199254740991 (DD28), natureza fora da lista, cobrança criada com mais de 100 itens (DD39), `limite` fora de 1 a 50, `cursor` que não é um lançamento da conta ou que partiria uma transação (DD27) ou `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres (DD32) (projeto base) |
 | `QIT000002` | 403 | sem o `INTERNAL-TOKEN`, ou com o valor errado (projeto base) |
+| `QIT000411` | 411 | corpo enviado em partes, sem o header `Content-Length` (DD39) |
+| `QIT000413` | 413 | corpo com mais de 65536 bytes (`MAXIMUM_BODY_BYTES`), recusado antes de ser lido (DD39) |
+| `QIT000503` | 503 | o banco não respondeu a tempo: a trava da conta não saiu em 5 s, a consulta passou de 15 s ou o banco está fora do ar, com o header `Retry-After: 1` e nada gravado; ou, em `/health_check/ready`, o banco não responde (DD39) |
 | `QIT001008` | 422 | documento com o formato certo e os dígitos verificadores errados |
 | `QIT001009` | 409 | documento já cadastrado |
 | `QIT001010` | 404 | proprietário não encontrado |
@@ -1126,7 +1131,7 @@ GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/saldo
 | --- | --- | --- | --- |
 | `competencia` | texto | sim | o mês de referência; uma cobrança por conta e competência |
 | `vencimento` | data | sim | a base da multa e dos juros |
-| `itens` | lista | sim | pelo menos um item |
+| `itens` | lista | sim | de 1 a 100 itens (DD39) |
 | `itens[].natureza` | texto | sim | `aluguel`, `condominio`, `iptu` ou `despesa_extra` (T36) |
 | `itens[].valor_centavos` | inteiro | sim | quanto é devido dessa natureza |
 
@@ -1564,6 +1569,7 @@ Para cada operação principal, precisamos definir pelo menos um caminho de falh
 | Estorno | Transação já estornada | 409 (`QIT001024`); nada é criado, e a original continua como estava |
 | Transferência (repasse) | Valor bruto menor ou igual à taxa pendente | 422 (`QIT001026`); nenhum lançamento de repasse (T40 e DD25) |
 | Recebimento ou estorno | O saldo passaria de 9007199254740991 | 422 (`QIT001029`); nada é gravado, e a restrição do banco confere o mesmo teto (DD37) |
+| Qualquer operação de dinheiro | A trava da conta não sai em 5 s (conta muito disputada ou trava presa) | 503 (`QIT000503`) com `Retry-After: 1`; a transação é desfeita, nada é gravado, e o cliente repete com a mesma `Idempotency-Key` (DD39) |
 
 ---
 
@@ -1836,7 +1842,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36 e a DD38 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36, a DD38 e a DD39 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1940,6 +1946,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD36 | *Derivado, aguarda revisão:* **extrato.** (a) A ordem do extrato é a ordem de registro na conta (o id), serializada pela trava da DD16. O `criado_em` é o instante em que a operação começou, com precisão de segundos, e pode não acompanhar essa ordem entre operações concorrentes; por isso o `ultimo_lancamento_em` da 7.2.7, que é o maior `criado_em`, pode diferir do `criado_em` da primeira linha. (b) O `limite` de 1 a 50 é o teto do parâmetro, e não das linhas: a página tem até `limite` linhas mais o resto da última transação, e uma transação grande (por exemplo, um recebimento com muitos itens) pode passar de 50. (c) O filtro `natureza` vale também para completar a transação, e o `proximo_cursor` vem nulo quando não resta linha daquela natureza. (d) Cada linha traz a `transacao_estornada_chave`: nas linhas de um estorno, a chave da transação que ele desfaz; nas outras, `null`. Aguarda a confirmação do time. (e) Parâmetro repetido na query segue a base: vale o último valor. (f) O extrato só lê, sem trava e sem commit | T11, T32, DD03, DD16, DD27, DD35 e 7.2.7 |
 | DD37 | **Endurecimento, decisões do time (29/09/2026).** (a) O CNPJ alfanumérico da Receita (IN RFB 2.229/2024) é aceito: as 12 primeiras posições aceitam letras maiúsculas de `A` a `Z` e dígitos, e os dígitos verificadores continuam numéricos, calculados pelo módulo 11 com o valor de cada caractere igual ao código ASCII menos 48. Letra minúscula responde 400. O validador é escolhido pela máscara, que o schema já garante: 14 caracteres, CPF; 18, CNPJ. Assim um CNPJ alfanumérico com dígito errado não passa como CPF, mesmo quando os seus dígitos formam um CPF válido. (b) `nome` e `imovel_referencia` têm de 1 a 255 caracteres, com pelo menos um que não seja espaço; os espaços das pontas são removidos antes de gravar, então o mesmo imóvel com um espaço a mais responde 409 (RN09). Caractere de controle (C0, DEL e C1, de U+0000 a U+001F e de U+007F a U+009F) e Unicode inválido (surrogate isolado) respondem 400; o NUL e o surrogate o PostgreSQL nem grava. (c) A política de imputação é única por nome e versão (`UNIQUE(nome, versao)`, 12.6). (d) Nenhum saldo passa de 9007199254740991: a operação que levaria o disponível ou o reservado acima dele responde 422 (`QIT001029`), sem nada gravado; vale para o recebimento e para o estorno, as duas operações que aumentam saldo, e o banco confere o mesmo teto nas restrições `ck_conta_saldo_*` | Decisão do time de 29/09/2026; DD13, DD28, RN09 e 12.6 |
 | DD38 | *Derivado, aguarda revisão:* **endurecimento das entradas e dos erros.** (a) Um corpo que o leitor de JSON do FastAPI não consegue decodificar (bytes inválidos na codificação detectada, inteiro com mais de 4300 dígitos, JSON aninhado demais) responde 400 (`QIT000001`), e não 500. O leitor detecta sozinho UTF-8, UTF-16 e UTF-32, então um corpo válido nessas codificações é lido normalmente. (b) Espaços e tabulações nas pontas da `Idempotency-Key` não fazem parte dela (HTTP, RFC 9110), para que um reenvio com um espaço a mais não movimente o dinheiro de novo; os 255 caracteres são contados depois disso. (c) `OPTIONS` também exige o `INTERNAL-TOKEN`, para que quem não tem o token não descubra as rotas pela diferença entre 404 e 405. (d) A resposta 500 também traz o `X-Request-ID`, e o log registra o erro com o traceback. Nenhuma entrada das rotas da ORCA produz mais um 500. A rota de exemplo da base, mantida como está (`GET /sample_entities` com um NUL no filtro `name`), ainda responde 500, e o teste HTTP usa esse caso para provar o header. (e) O engine do SQLAlchemy usa `hide_parameters`, para que o log de um erro de banco não grave os valores enviados. (f) O índice `ix_lancamento_conta_id` passa a ser `(conta_id, id)`, a ordem do extrato | RFC 7.1 (X-Request-ID e QIT000001), RFC 9110, DD18, DD36 |
+| DD39 | *Derivado, aguarda revisão:* **produção (Aula 4).** (a) O log sai em JSON, uma linha por evento em stdout, com `request_id`, `method`, `path`, `status` e `duration_ms` como campos; a linha de acesso do uvicorn, que repetia a de saída sem o `request_id`, foi desligada, e as outras linhas do uvicorn passam pelo mesmo formato. (b) `GET /metrics` expõe as métricas RED (`orca_http_requests_total` e `orca_http_request_duration_seconds`), rotuladas pelo molde da rota e nunca pela chave, com os métodos incomuns juntos em `OUTRO`, e exige o `INTERNAL-TOKEN`. (c) `GET /health_check/ready` responde se a API está pronta para tráfego, com um `SELECT 1`; o `/health_check` continua sem tocar no banco, para que uma queda do banco não reinicie a API. A prontidão dispensa o token e é a que o healthcheck do compose usa. (d) Toda conexão com o banco tem `lock_timeout` de 5 s, `statement_timeout` de 15 s e `connect_timeout` de 3 s; estourou, ou o banco está fora do ar, a resposta é 503 (`QIT000503`) com `Retry-After: 1`, e a transação é desfeita. (e) O corpo tem até 65536 bytes (413, `QIT000413`) e precisa declarar o tamanho (411, `QIT000411`); a cobrança é criada com até 100 itens (400). (f) Fora dos ambientes `local` e `test`, a API não sobe com o `INTERNAL_TOKEN` padrão nem com um de menos de 32 caracteres (a regra nega por padrão), e o token é comparado em tempo constante. As respostas às 9 perguntas da Aula 4 estão em [producao.md](../producao.md) | Aula 4 (Produção), OWASP API Security Top 10 2023, DD16, DD18, DD38 |
 
 ---
 

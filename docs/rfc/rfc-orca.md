@@ -46,6 +46,8 @@ O que foi considerado e descartado:
 
 Todas as rotas exigem o header `INTERNAL-TOKEN` (sem ele, `403`) e respondem `400` (`QIT000001`) a corpo, query ou header fora do formato. As rotas de dinheiro exigem a `Idempotency-Key` e são idempotentes: a chave é única por conta no banco, e o hash da rota, da chave do caminho e do corpo separa a repetição (`200` com o resultado original, sem novo efeito) da chave reutilizada com outro pedido (`409`). Uma chave que não existe, fora do formato ou que não pertence a quem pede responde `404`, e não `403`, para não revelar que o recurso existe; o id interno do banco nunca sai numa resposta, só a chave UUID. Na Fase 1 há um só ator, o operador da administradora, identificado pelo `INTERNAL-TOKEN`, então o `404` cobre a chave inexistente e a chave de outro recurso.
 
+Além das rotas de negócio abaixo, a API tem duas rotas operacionais: `GET /health_check/ready`, que diz se ela está pronta para tráfego consultando o banco, e `GET /metrics`, com as métricas de tráfego, erro e duração de cada rota. Toda operação que espera mais de 5 segundos pela trava da conta responde `503` com `Retry-After`, sem gravar nada. O jeito de pôr a API em produção está em [producao.md](../producao.md).
+
 | Método | Caminho | O que faz | Entrada (campos que importam) | Saídas (status e quando) |
 | --- | --- | --- | --- | --- |
 | `POST` | `/proprietarios` | Cadastra o dono do imóvel | `documento` (CPF ou CNPJ, inclusive o alfanumérico, com máscara), `nome` | `201` com a chave; `422` dígito verificador errado; `409` documento já cadastrado |
