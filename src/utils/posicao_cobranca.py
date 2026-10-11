@@ -64,7 +64,7 @@ def calcular_posicao(cobranca: Cobranca, conta: Conta, pagamentos: list, data: d
 def _data_de_referencia(cobranca: Cobranca, item: ItemCobranca) -> date:
     referencia = cobranca.vencimento
 
-    if item.criado_em > cobranca.criado_em:
+    if not _enviado_na_criacao(cobranca, item):
         data_de_inclusao = date_in_sao_paulo(item.criado_em)
 
         if data_de_inclusao > cobranca.vencimento:
@@ -74,7 +74,11 @@ def _data_de_referencia(cobranca: Cobranca, item: ItemCobranca) -> date:
 
 
 def _incluido_depois_de(cobranca: Cobranca, item: ItemCobranca, data: date) -> bool:
-    return item.criado_em > cobranca.criado_em and date_in_sao_paulo(item.criado_em) > data
+    return not _enviado_na_criacao(cobranca, item) and date_in_sao_paulo(item.criado_em) > data
+
+
+def _enviado_na_criacao(cobranca: Cobranca, item: ItemCobranca) -> bool:
+    return item.criado_em == cobranca.criado_em
 
 
 def data_do_ultimo_pagamento(pagamentos: list) -> date:
