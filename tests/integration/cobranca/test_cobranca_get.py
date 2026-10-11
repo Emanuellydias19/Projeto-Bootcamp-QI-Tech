@@ -1,6 +1,12 @@
 from datetime import timedelta
 
-from tests.utils import ObjectGenerator, PayloadGenerator, RequestGenerator, today_in_sao_paulo
+from tests.utils import (
+    ObjectGenerator,
+    PayloadGenerator,
+    RequestGenerator,
+    adiantar_o_relogio_da_cobranca,
+    today_in_sao_paulo,
+)
 from tests.utils.requisition import ClientRequisition
 
 
@@ -108,6 +114,30 @@ class TestCobrancaGet:
             "multa_centavos": 4600,
             "juros_centavos": 1050,
             "total_devido_na_data_centavos": 235650,
+        }
+
+    def test_item_included_after_the_vencimento_has_no_retroactive_encargos_when_the_clock_went_back(self):
+        today = today_in_sao_paulo()
+        vencimento = today - timedelta(days=10)
+        cobranca_chave = ObjectGenerator.create_cobranca(
+            new_conta_chave(),
+            vencimento=vencimento.isoformat(),
+            itens=[{"natureza": "aluguel", "valor_centavos": 200000}],
+        )["cobranca_chave"]
+        adiantar_o_relogio_da_cobranca(cobranca_chave)
+
+        status, _response = RequestGenerator.POST_cobranca_itens(
+            cobranca_chave, PayloadGenerator.create_item_payload(valor_centavos=30000)
+        )
+        assert status == 201
+
+        status, response = RequestGenerator.GET_cobranca(cobranca_chave)
+        assert response["data"] == today.isoformat(), "o dia virou em Sao Paulo durante o teste; rode de novo"
+
+        assert encargos_on(cobranca_chave, today.isoformat()) == {
+            "multa_centavos": 4000,
+            "juros_centavos": 666,
+            "total_devido_na_data_centavos": 234666,
         }
 
     def test_item_included_before_the_vencimento_uses_the_vencimento(self):

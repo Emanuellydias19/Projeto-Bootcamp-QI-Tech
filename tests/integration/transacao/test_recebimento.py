@@ -8,6 +8,7 @@ from tests.utils import (
     ObjectGenerator,
     PayloadGenerator,
     RequestGenerator,
+    adiantar_o_relogio_da_cobranca,
     extrato_completo,
     saldos_pelo_extrato,
     today_in_sao_paulo,
@@ -217,6 +218,24 @@ class TestRecebimento:
         cobranca_hoje = posicao(cobranca["cobranca_chave"], today)
         assert cobranca_hoje["status"] == "parcial"
         assert cobranca_hoje["total_em_aberto_centavos"] == 30000
+
+    def test_ignores_an_item_included_after_the_payment_date_when_the_clock_went_back(self):
+        today = today_in_sao_paulo()
+        cobranca = new_cobranca(today + timedelta(days=5))
+        adiantar_o_relogio_da_cobranca(cobranca["cobranca_chave"])
+
+        status, _response = RequestGenerator.POST_cobranca_itens(
+            cobranca["cobranca_chave"], PayloadGenerator.create_item_payload(valor_centavos=30000)
+        )
+        assert status == 201
+
+        status, response = receber(cobranca["cobranca_chave"], 230000, today - timedelta(days=1))
+        assert status == 422
+        assert response["code"] == "QIT001019"
+
+        status, response = receber(cobranca["cobranca_chave"], 200000, today - timedelta(days=1))
+        assert status == 201
+        assert response["em_aberto"] == []
 
     def test_sees_an_item_included_while_waiting_for_the_lock(self):
         today = today_in_sao_paulo()
