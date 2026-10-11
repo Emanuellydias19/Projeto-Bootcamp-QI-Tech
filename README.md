@@ -129,7 +129,7 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 | Concorrência (trava da conta) e idempotência nas quatro operações de dinheiro | Prontas |
 | Decisões de modelagem e de contrato | Fechadas |
 | Produção (logs, métricas, saúde, timeouts e limites) | Pronta |
-| Decisões de implementação | Registradas (DD11 a DD39); as derivadas aguardam a revisão do time |
+| Decisões de implementação | Registradas (DD11 a DD40); as derivadas aguardam a revisão do time |
 
 ## Tecnologias
 
