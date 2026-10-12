@@ -1,16 +1,35 @@
+import json
 import logging
 import sys
+from datetime import datetime, timezone
 
 from constants import APP_ENV, SERVICE_NAME
 from utils.request_context import get_request_id
 
+STANDARD_RECORD_FIELDS = set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message", "asctime", "request_id", "color_message"}
 
-# O "[%(request_id)s]" é o identificador da requisição que gerou a linha
-# — quem o preenche é o filtro logo abaixo. Uma linha sai assim:
-#
-#   2026-09-01 12:00:00 [INFO] bootcamp-api.middlewares.request_logger
-#   [8f3c1e42-...] - ENTROU GET /sample_entities
-LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s [%(request_id)s] - %(message)s"
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        line = {
+            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(timespec="milliseconds"),
+            "level": record.levelname,
+            "logger": record.name,
+            "request_id": getattr(record, "request_id", None),
+            "message": record.getMessage(),
+        }
+
+        for field, value in vars(record).items():
+            if field not in STANDARD_RECORD_FIELDS and field not in line:
+                line[field] = value
+
+        if record.exc_info:
+            line["exception"] = self.formatException(record.exc_info)
+
+        if record.stack_info:
+            line["stack"] = self.formatStack(record.stack_info)
+
+        return json.dumps(line, ensure_ascii=False, default=str)
 
 
 class RequestIdFilter(logging.Filter):
@@ -41,7 +60,7 @@ def setup_logging() -> None:
         level = logging.DEBUG
 
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    handler.setFormatter(JsonFormatter())
 
     # O filtro fica no HANDLER, não num logger específico: assim toda
     # linha que passar por aqui ganha o campo, venha ela do nosso código
@@ -52,6 +71,10 @@ def setup_logging() -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
     root_logger.handlers = [handler]
+
+    server_logger = logging.getLogger("uvicorn")
+    server_logger.handlers = []
+    server_logger.propagate = True
 
     # O urllib3 fala MUITO em modo debug, e nada disso e nosso: sao
     # detalhes de conexao HTTP das bibliotecas que usamos.

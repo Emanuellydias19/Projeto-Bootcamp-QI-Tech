@@ -42,18 +42,22 @@ services:
       BANKSLIP_API_URL: ${BANKSLIP_API_URL:-http://localhost:8080}
       BANKSLIP_API_INTERNAL_TOKEN: ${BANKSLIP_API_INTERNAL_TOKEN:-default_token}
       BANKSLIP_API_TIMEOUT: ${BANKSLIP_API_TIMEOUT:-5}
+      MAXIMUM_BODY_BYTES: ${MAXIMUM_BODY_BYTES:-65536}
+      DB_LOCK_TIMEOUT_MS: ${DB_LOCK_TIMEOUT_MS:-5000}
+      DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-15000}
+      DB_CONNECT_TIMEOUT_SECONDS: ${DB_CONNECT_TIMEOUT_SECONDS:-3}
     volumes:
       # Monta o codigo pra dentro do container: salvou o arquivo,
       # a API recarrega sozinha (o --reload ali embaixo).
       - ./src:/app
     # --reload: salvou o arquivo, a API reinicia sozinha.
-    command: uvicorn app:app --host 0.0.0.0 --port 3000 --no-server-header --reload
+    command: uvicorn app:app --host 0.0.0.0 --port 3000 --no-server-header --no-access-log --reload
     healthcheck:
       # "Subiu" nao e a mesma coisa que "ja responde". E esta checagem
       # que diz quando a API passa a atender de verdade — espere ela
       # ficar (healthy) antes de rodar o pytest, ou o primeiro teste
       # bate numa porta que ainda nao responde.
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:3000/health_check\")'"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:3000/health_check/ready\")'"]
       interval: 3s
       timeout: 5s
       retries: 20

@@ -112,26 +112,39 @@ CREATE TABLE transacao(
     chave                           CHAR(36) NOT NULL,
     conta_id                        BIGINT NOT NULL,
     tipo                            TEXT NOT NULL,
-    cobranca_id                     BIGINT,
     transacao_estornada_id          BIGINT,
     chave_idempotencia              TEXT NOT NULL,
     hash_requisicao                 CHAR(64) NOT NULL,
     resultado                       JSONB NOT NULL,
-    pago_em                         DATE,
     criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
     CONSTRAINT fk_transacao_conta FOREIGN KEY (conta_id) REFERENCES conta(id),
-    CONSTRAINT fk_transacao_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobranca(id),
     CONSTRAINT fk_transacao_estornada FOREIGN KEY (transacao_estornada_id) REFERENCES transacao(id),
     CONSTRAINT uq_transacao_chave UNIQUE(chave),
     CONSTRAINT uq_transacao_conta_idempotencia UNIQUE(conta_id, chave_idempotencia),
     CONSTRAINT uq_transacao_estornada UNIQUE(transacao_estornada_id),
+    CONSTRAINT uq_transacao_id_tipo UNIQUE(id, tipo),
     CONSTRAINT ck_transacao_tipo CHECK (tipo IN ('recebimento', 'encargo', 'repasse', 'estorno')),
-    CONSTRAINT ck_transacao_pago_em CHECK ((tipo = 'recebimento') = (pago_em IS NOT NULL)),
-    CONSTRAINT ck_transacao_cobranca CHECK ((tipo = 'recebimento') = (cobranca_id IS NOT NULL)),
     CONSTRAINT ck_transacao_estornada CHECK ((tipo = 'estorno') = (transacao_estornada_id IS NOT NULL))
 );
 
-CREATE INDEX ix_transacao_cobranca_id ON transacao(cobranca_id);
+CREATE TABLE recebimento(
+    id                              BIGSERIAL PRIMARY KEY,
+    chave                           CHAR(36) NOT NULL,
+    transacao_id                    BIGINT NOT NULL,
+    transacao_tipo                  TEXT NOT NULL DEFAULT('recebimento'),
+    cobranca_id                     BIGINT NOT NULL,
+    valor_centavos                  BIGINT NOT NULL,
+    pago_em                         DATE NOT NULL,
+    criado_em                       TIMESTAMPTZ NOT NULL DEFAULT(NOW()),
+    CONSTRAINT fk_recebimento_transacao FOREIGN KEY (transacao_id, transacao_tipo) REFERENCES transacao(id, tipo),
+    CONSTRAINT fk_recebimento_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobranca(id),
+    CONSTRAINT uq_recebimento_chave UNIQUE(chave),
+    CONSTRAINT uq_recebimento_transacao UNIQUE(transacao_id),
+    CONSTRAINT ck_recebimento_transacao_tipo CHECK (transacao_tipo = 'recebimento'),
+    CONSTRAINT ck_recebimento_valor CHECK (valor_centavos BETWEEN 1 AND 9007199254740991)
+);
+
+CREATE INDEX ix_recebimento_cobranca_id ON recebimento(cobranca_id, pago_em, transacao_id);
 
 CREATE TABLE lancamento(
     id                              BIGSERIAL PRIMARY KEY,

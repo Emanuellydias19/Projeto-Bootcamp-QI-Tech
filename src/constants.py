@@ -27,14 +27,23 @@ BANKSLIP_API_INTERNAL_TOKEN = os.environ.get("BANKSLIP_API_INTERNAL_TOKEN", "def
 # src/connectors/rest_connector.py.
 BANKSLIP_API_TIMEOUT = int(os.environ.get("BANKSLIP_API_TIMEOUT", "5"))
 
-# Rotas públicas: não exigem o header INTERNAL-TOKEN. São as duas que
+# Rotas públicas: não exigem o header INTERNAL-TOKEN. São as que
 # precisam responder pra quem ainda não tem token nenhum: a raiz, que
-# diz quem é este serviço, e o health check, que o Docker consulta pra
+# diz quem é este serviço, e os health checks, que o Docker consulta pra
 # saber se a API já está de pé.
 BYPASS_ENDPOINTS = [
     "/",
     "/health_check",
+    "/health_check/ready",
 ]
+
+MAXIMUM_BODY_BYTES = int(os.environ.get("MAXIMUM_BODY_BYTES", "65536"))
+DB_LOCK_TIMEOUT_MS = int(os.environ.get("DB_LOCK_TIMEOUT_MS", "5000"))
+DB_STATEMENT_TIMEOUT_MS = int(os.environ.get("DB_STATEMENT_TIMEOUT_MS", "15000"))
+DB_CONNECT_TIMEOUT_SECONDS = int(os.environ.get("DB_CONNECT_TIMEOUT_SECONDS", "3"))
+DEVELOPMENT_ENVIRONMENTS = ["local", "test"]
+DEFAULT_INTERNAL_TOKEN = "default_token"
+MINIMUM_PRODUCTION_TOKEN_LENGTH = 32
 
 REQUIRED_VARIABLES = ["DATABASE_URL", "INTERNAL_TOKEN"]
 
@@ -50,4 +59,17 @@ def check_variables():
             f"Faltam variáveis de ambiente: {', '.join(missing)}. "
             "Rodando com 'docker compose up' elas já vêm preenchidas. "
             "Fora do Docker, copie o .env.example para .env."
+        )
+
+
+def check_production_token():
+    if APP_ENV.lower() in DEVELOPMENT_ENVIRONMENTS:
+        return
+
+    token = INTERNAL_TOKEN.strip()
+
+    if token == DEFAULT_INTERNAL_TOKEN or len(token) < MINIMUM_PRODUCTION_TOKEN_LENGTH:
+        raise EnvironmentError(
+            f"Fora dos ambientes {' e '.join(DEVELOPMENT_ENVIRONMENTS)}, o INTERNAL_TOKEN precisa ser um segredo "
+            f"proprio, com pelo menos {MINIMUM_PRODUCTION_TOKEN_LENGTH} caracteres, e nao o valor padrao do docker-compose."
         )

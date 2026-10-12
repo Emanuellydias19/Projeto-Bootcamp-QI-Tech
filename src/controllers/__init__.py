@@ -1,4 +1,5 @@
 from controllers.sample_entity_controller import SampleEntityController
+from controllers.health_check_controller import HealthCheckController
 from controllers.proprietario_controller import ProprietarioController
 from controllers.conta_controller import ContaController
 from controllers.cobranca_controller import CobrancaController

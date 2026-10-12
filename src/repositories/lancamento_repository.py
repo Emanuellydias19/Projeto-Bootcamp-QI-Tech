@@ -5,7 +5,7 @@ from sqlalchemy import exists, func
 from sqlalchemy.orm import aliased
 
 from database import Context
-from models import Cobranca, Conta, Lancamento, Transacao
+from models import Cobranca, Conta, Lancamento, Recebimento, Transacao
 
 
 class LancamentoRepository:
@@ -39,14 +39,13 @@ class LancamentoRepository:
         estorno = aliased(Transacao)
 
         return (
-            self.session.query(Lancamento, Transacao.pago_em)
-            .join(Transacao, Lancamento.transacao_id == Transacao.id)
+            self.session.query(Lancamento, Recebimento.pago_em)
+            .join(Recebimento, Lancamento.transacao_id == Recebimento.transacao_id)
             .filter(
-                Transacao.cobranca_id == cobranca.id,
-                Transacao.tipo == Transacao.TIPO_RECEBIMENTO,
-                ~exists().where(estorno.transacao_estornada_id == Transacao.id),
+                Recebimento.cobranca_id == cobranca.id,
+                ~exists().where(estorno.transacao_estornada_id == Recebimento.transacao_id),
             )
-            .order_by(Transacao.pago_em, Lancamento.id)
+            .order_by(Recebimento.pago_em, Lancamento.id)
             .all()
         )
 

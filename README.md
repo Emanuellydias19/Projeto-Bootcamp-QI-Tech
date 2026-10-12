@@ -36,9 +36,11 @@
 
 ---
 
-> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** Ela não movimenta dinheiro: registra de quem é cada valor, para que ele está reservado e quanto pode ser repassado.
+> **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** É o núcleo de um banco dentro da administradora: contas, saldo, transações, tarifa e extrato. Ela registra e controla de quem é cada valor, para que ele está reservado e quanto pode ser repassado. Ela não executa PIX nem boleto: liquidar o dinheiro no sistema bancário não faz parte de um protótipo.
 >
 > **Implementada.** As 11 rotas do contrato estão no ar, cobertas por testes que falam só por HTTP, inclusive os de concorrência: cadastro, conta, saldo, cobrança (com inclusão de item e consulta), recebimento, pagamento de encargo, repasse com a taxa, estorno e extrato. O desenho está no [RFC da ORCA](docs/rfc/rfc-orca.md), e cada decisão, com a alternativa descartada, está no [documento de decisões](docs/rfc/RFC.md). A entidade de exemplo do projeto base (`sample_entity`) continua no código como referência didática da base, fora do escopo da ORCA.
+>
+> **Preparada para produção.** Logs em JSON com o `request_id`, métricas de tráfego, erro e duração em `/metrics`, prontidão separada da vida do processo, limites de tempo no banco e de tamanho no corpo, e recusa de subir em produção com o token padrão. Tudo explicado em [docs/producao.md](docs/producao.md), com as respostas às 9 perguntas da Aula 4 e os limites que ainda ficam, como a autorização por perfil.
 
 **Sumário:** [A dor](#a-dor) · [A ideia](#a-ideia) · [As cinco peças](#as-cinco-peças) · [As três regras](#as-três-regras-que-o-sistema-barra) · [Um mês na conta](#um-mês-na-conta-do-proprietário) · [Decisões de modelagem](#decisões-de-modelagem) · [Status](#status) · [Tecnologias](#tecnologias) · [Começando](#começando) · [Documentação](#documentação) · [Estrutura](#estrutura) · [Como contribuir](#como-contribuir) · [Licença](#licença)
 
@@ -126,7 +128,8 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 | Regra 3: sem lançamento genérico | Pronta |
 | Concorrência (trava da conta) e idempotência nas quatro operações de dinheiro | Prontas |
 | Decisões de modelagem e de contrato | Fechadas |
-| Decisões de implementação | Registradas (DD11 a DD38); as derivadas aguardam a revisão do time |
+| Produção (logs, métricas, saúde, timeouts e limites) | Pronta |
+| Decisões de implementação | Registradas (DD11 a DD40); as derivadas aguardam a revisão do time |
 
 ## Tecnologias
 
@@ -143,7 +146,7 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 
 ## Começando
 
-Você precisa de **Docker Desktop**, **Git** e **Python 3.12**. Com eles instalados:
+Você precisa de **Docker Desktop**, **Git** e **Python 3.12 ou mais novo** (só para os testes). Com eles instalados:
 
 ```bash
 git clone https://github.com/Emanuellydias19/Projeto-Bootcamp-QI-Tech.git
@@ -154,13 +157,14 @@ docker compose up --build
 
 Abra <http://localhost:3000>: se aparecer `{"service":"bootcamp-api",...}`, está funcionando.
 
-O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, com os testes, as particularidades do Windows e as soluções para os erros mais comuns.
+O passo a passo completo está em **[docs/como-rodar.md](docs/como-rodar.md)**, com os testes, as particularidades do Windows, as soluções para os erros mais comuns e um [passeio pelas rotas da ORCA](docs/como-rodar.md#6-um-passeio-pelas-rotas-da-orca) com `curl`.
 
 ## Documentação
 
 | Documento | O que tem |
 | --- | --- |
 | [docs/como-rodar.md](docs/como-rodar.md) | Instalação, execução, testes e problemas comuns. |
+| [docs/producao.md](docs/producao.md) | A ORCA em produção: logs, métricas, saúde, timeouts, idempotência, configuração e segurança, com as respostas às 9 perguntas da Aula 4. |
 | [docs/rfc/rfc-orca.md](docs/rfc/rfc-orca.md) | O RFC da ORCA no formato oficial do Bootcamp: o problema, a solução, as rotas, o diagrama do banco, os fluxos e o principal desafio. |
 | [docs/rfc/RFC.md](docs/rfc/RFC.md) | O documento de decisões da API: domínio, regras de negócio, rotas, fluxos, modelo de dados e as decisões tomadas e em aberto. |
 | [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca-modelo-dados.erd.json) | O diagrama do banco de dados, para abrir no ERD Editor do VS Code. |

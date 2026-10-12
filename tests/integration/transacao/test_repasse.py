@@ -241,22 +241,34 @@ class TestRepasse:
         cobranca_chave = new_cobranca_chave(conta_chave)
         receber(cobranca_chave, 180000)
 
-        status, response = repassar(conta_chave, 150000)
-        assert status == 409
-        assert response["code"] == "QIT001020"
-
         status, response = pagar_encargo(conta_chave, "condominio", 35000)
         assert status == 201
         assert response["natureza"] == "condominio"
         assert response["valor_centavos"] == 35000
 
-        receber(cobranca_chave, 20000)
+        status, response = repassar(conta_chave, 130001)
+        assert status == 409
+        assert response["code"] == "QIT001020"
 
-        status, response = repassar(conta_chave, 150000)
+        status, repasse = repassar(conta_chave, 130000)
         assert status == 201
-        assert valores(response) == {"valor_bruto_centavos": 150000, "taxa_centavos": 15000, "liquido_centavos": 135000}
+        assert valores(repasse) == {"valor_bruto_centavos": 130000, "taxa_centavos": 13000, "liquido_centavos": 117000}
 
         assert saldos(conta_chave) == {"disponivel": 0, "reservado": 15000}
+
+        status, extrato = RequestGenerator.GET_conta_extrato(conta_chave, {"limite": "2"})
+        assert status == 200
+        linhas = []
+        for linha in extrato["data"]:
+            linhas.append((linha["natureza"], linha["valor_centavos"]))
+        assert linhas == [("repasse", -117000), ("taxa", -13000)]
+
+        status, estorno = RequestGenerator.POST_transacao_estornos(repasse["transacao_chave"])
+        assert status == 201
+        assert estorno["lancamentos"] == [
+            {"natureza": "repasse", "valor_centavos": 117000},
+            {"natureza": "taxa", "valor_centavos": 13000},
+        ]
 
     def test_does_not_retain_taxa_over_money_that_is_not_aluguel(self):
         conta_chave = new_conta_chave()

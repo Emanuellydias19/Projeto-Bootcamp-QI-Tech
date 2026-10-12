@@ -4,6 +4,9 @@ from fastapi import Response, status
 from fastapi.responses import JSONResponse
 
 from constants import SERVICE_NAME
+from controllers import HealthCheckController
+from errors.base_error import ServiceUnavailable
+from errors.handlers import qi_exception_to_response
 
 
 class HealthCheckResource:
@@ -19,3 +22,11 @@ class HealthCheckResource:
         # Por isso a resposta não tem corpo nenhum: é um `Response`
         # pelado, e não um JSONResponse.
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    def on_get_ready(self) -> JSONResponse:
+        controller = HealthCheckController()
+
+        if not controller.is_database_ready():
+            return qi_exception_to_response(ServiceUnavailable("The database is not ready."))
+
+        return JSONResponse(content={"status": "pronto", "banco": "ok"}, status_code=status.HTTP_200_OK)

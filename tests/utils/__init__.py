@@ -6,3 +6,4 @@ from tests.utils.request_generator import RequestGenerator, INTERNAL_TOKEN, UUID
 from tests.utils.concurrent_requests import ConcurrentRequests
 from tests.utils.dates import today_in_sao_paulo
 from tests.utils.extrato import extrato_completo, saldos_pelo_extrato
+from tests.utils.relogio import adiantar_o_relogio_da_cobranca
