@@ -37,3 +37,13 @@ class CobrancaResource:
             content=jsonable_encoder(cobranca),
             status_code=http_status.HTTP_200_OK,
         )
+
+    @SchemaHandler.validate_query_params("get_conta_devido.json")
+    def on_get_devido(self, conta_chave: str, request: Request) -> JSONResponse:
+        controller = CobrancaController()
+        devido = controller.get_devido_da_conta(conta_chave, request.query_params.get("data"))
+
+        return JSONResponse(
+            content=jsonable_encoder(devido),
+            status_code=http_status.HTTP_200_OK,
+        )

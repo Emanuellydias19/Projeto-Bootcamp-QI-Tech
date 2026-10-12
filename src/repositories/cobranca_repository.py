@@ -35,5 +35,13 @@ class CobrancaRepository:
     def get_by_chave(self, chave: str) -> Cobranca:
         return self.session.query(Cobranca).filter(Cobranca.chave == chave).first()
 
+    def list_by_conta(self, conta: Conta) -> list:
+        return (
+            self.session.query(Cobranca)
+            .filter(Cobranca.conta_id == conta.id)
+            .order_by(Cobranca.competencia, Cobranca.id)
+            .all()
+        )
+
     def refresh_itens(self, cobranca: Cobranca) -> None:
         self.session.refresh(cobranca, ["itens"])

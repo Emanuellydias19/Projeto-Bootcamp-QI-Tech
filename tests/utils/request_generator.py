@@ -174,3 +174,13 @@ class RequestGenerator:
             query_params=params,
         )
         return response.response_status, response.response_json
+
+    @staticmethod
+    def GET_conta_devido(conta_chave: str, params: dict = None) -> tuple:
+        response = ClientRequisition.send(
+            "GET",
+            f"/contas/{conta_chave}/devido",
+            headers={"INTERNAL-TOKEN": INTERNAL_TOKEN},
+            query_params=params,
+        )
+        return response.response_status, response.response_json

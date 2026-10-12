@@ -27,6 +27,18 @@ class RecebimentoRepository:
     def get_by_transacao(self, transacao: Transacao) -> Recebimento:
         return self.session.query(Recebimento).filter(Recebimento.transacao_id == transacao.id).first()
 
+    def list_by_cobranca(self, cobranca: Cobranca) -> list:
+        estorno = aliased(Transacao)
+
+        return (
+            self.session.query(Recebimento, Transacao.chave, estorno.id)
+            .join(Transacao, Recebimento.transacao_id == Transacao.id)
+            .outerjoin(estorno, estorno.transacao_estornada_id == Recebimento.transacao_id)
+            .filter(Recebimento.cobranca_id == cobranca.id)
+            .order_by(Recebimento.pago_em, Recebimento.transacao_id)
+            .all()
+        )
+
     def get_ultimo_da_cobranca(self, cobranca_id: int) -> Recebimento:
         estorno = aliased(Transacao)
 

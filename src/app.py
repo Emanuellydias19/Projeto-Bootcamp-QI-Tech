@@ -185,6 +185,7 @@ def create_app() -> FastAPI:
     application.add_api_route("/contas/{conta_chave}/extrato", conta_resource.on_get_extrato, methods=["GET"])
 
     application.add_api_route("/contas/{conta_chave}/cobrancas", cobranca_resource.on_post, methods=["POST"])
+    application.add_api_route("/contas/{conta_chave}/devido", cobranca_resource.on_get_devido, methods=["GET"])
     application.add_api_route("/cobrancas/{cobranca_chave}", cobranca_resource.on_get_by_chave, methods=["GET"])
     application.add_api_route("/cobrancas/{cobranca_chave}/itens", cobranca_resource.on_post_item, methods=["POST"])
 

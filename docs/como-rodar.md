@@ -66,7 +66,7 @@ Depois, sempre com a API de pé e `(healthy)` em `docker compose ps`:
 pytest
 ```
 
-O resultado esperado é `303 passed`, em 1 a 4 minutos, conforme a máquina. Para rodar um arquivo só: `pytest -v tests/integration/test_healthcheck.py`.
+O resultado esperado é `321 passed`, em 1 a 4 minutos, conforme a máquina. Para rodar um arquivo só: `pytest -v tests/integration/test_healthcheck.py`.
 
 Para conferir o estilo do código com as regras do `.flake8`, rode `python -m flake8 .`. O resultado esperado é nenhuma linha de saída.
 
@@ -126,6 +126,12 @@ TOKEN=default_token
 
    ```bash
    curl -s "$API/cobrancas/$COBRANCA?data=2026-09-05" -H "INTERNAL-TOKEN: $TOKEN"
+   ```
+
+   Para ver quanto a conta inteira deve nessa data, somando as cobranças não quitadas:
+
+   ```bash
+   curl -s "$API/contas/$CONTA/devido?data=2026-09-05" -H "INTERNAL-TOKEN: $TOKEN"
    ```
 
 6. Pague o condomínio com o dinheiro reservado para ele.

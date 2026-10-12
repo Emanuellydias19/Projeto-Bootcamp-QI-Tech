@@ -38,7 +38,7 @@
 
 > **A ORCA é o livro-caixa interno da administradora que mantém a posição financeira de cada proprietário, por imóvel.** É o núcleo de um banco dentro da administradora: contas, saldo, transações, tarifa e extrato. Ela registra e controla de quem é cada valor, para que ele está reservado e quanto pode ser repassado. Ela não executa PIX nem boleto: liquidar o dinheiro no sistema bancário não faz parte de um protótipo.
 >
-> **Implementada.** As 11 rotas do contrato estão no ar, cobertas por testes que falam só por HTTP, inclusive os de concorrência: cadastro, conta, saldo, cobrança (com inclusão de item e consulta), recebimento, pagamento de encargo, repasse com a taxa, estorno e extrato. O desenho está no [RFC da ORCA](docs/rfc/rfc-orca.md), e cada decisão, com a alternativa descartada, está no [documento de decisões](docs/rfc/RFC.md). A entidade de exemplo do projeto base (`sample_entity`) continua no código como referência didática da base, fora do escopo da ORCA.
+> **Implementada.** As 12 rotas do contrato estão no ar, cobertas por testes que falam só por HTTP, inclusive os de concorrência: cadastro, conta, saldo, cobrança (com inclusão de item e consulta), recebimento, pagamento de encargo, repasse com a taxa, estorno e extrato. O desenho está no [RFC da ORCA](docs/rfc/rfc-orca.md), e cada decisão, com a alternativa descartada, está no [documento de decisões](docs/rfc/RFC.md). A entidade de exemplo do projeto base (`sample_entity`) continua no código como referência didática da base, fora do escopo da ORCA.
 >
 > **Preparada para produção.** Logs em JSON com o `request_id`, métricas de tráfego, erro e duração em `/metrics`, prontidão separada da vida do processo, limites de tempo no banco e de tamanho no corpo, e recusa de subir em produção com o token padrão. Tudo explicado em [docs/producao.md](docs/producao.md), com as respostas às 9 perguntas da Aula 4 e os limites que ainda ficam, como a autorização por perfil.
 
@@ -129,7 +129,8 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 | Concorrência (trava da conta) e idempotência nas quatro operações de dinheiro | Prontas |
 | Decisões de modelagem e de contrato | Fechadas |
 | Produção (logs, métricas, saúde, timeouts e limites) | Pronta |
-| Decisões de implementação | Registradas (DD11 a DD40); as derivadas aguardam a revisão do time |
+| Consulta do devido por conta, numa data, com multa e juros | Pronta |
+| Decisões de implementação | Registradas (DD11 a DD44); as derivadas aguardam a revisão do time |
 
 ## Tecnologias
 
@@ -139,7 +140,7 @@ O diagrama do banco está em [docs/rfc/orca-modelo-dados.erd.json](docs/rfc/orca
 | API | FastAPI + Uvicorn | 0.141.1 / 0.52.3 |
 | Validação da entrada | jsonschema | 4.17.3 |
 | Banco de dados | PostgreSQL | 16 |
-| Acesso ao banco | SQLAlchemy + psycopg2 | 2.0.23 / 2.9.10 |
+| Acesso ao banco | SQLAlchemy + psycopg2 | 2.0.54 / 2.9.13 |
 | Chamadas a outros serviços | requests | 2.32.3 |
 | Ambiente | Docker + Docker Compose | Compose Specification |
 | Testes | pytest | 7.4.4 |
