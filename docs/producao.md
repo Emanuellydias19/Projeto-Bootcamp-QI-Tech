@@ -35,7 +35,7 @@ Cada linha é um objeto JSON escrito em stdout, como pede o fator XI do 12-facto
 
 ```json
 {"timestamp": "2026-10-01T00:20:26.473+00:00", "level": "INFO", "logger": "bootcamp-api.middlewares.request_logger", "request_id": "7b24c351-0933-4237-8abc-020f1ced3746", "message": "ENTROU POST /contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses", "method": "POST", "path": "/contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses"}
-{"timestamp": "2026-10-01T00:20:31.503+00:00", "level": "WARNING", "logger": "bootcamp-api.errors.handlers", "request_id": "7b24c351-0933-4237-8abc-020f1ced3746", "message": "Tempo do banco esgotado em POST /contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses"}
+{"timestamp": "2026-10-01T00:20:31.503+00:00", "level": "WARNING", "logger": "bootcamp-api.errors.handlers", "request_id": "7b24c351-0933-4237-8abc-020f1ced3746", "message": "O banco nao respondeu a tempo em POST /contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses", "pgcode": "55P03"}
 {"timestamp": "2026-10-01T00:20:31.504+00:00", "level": "INFO", "logger": "bootcamp-api.middlewares.request_logger", "request_id": "7b24c351-0933-4237-8abc-020f1ced3746", "message": "SAIU 503 POST /contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses - 5031.0 ms", "method": "POST", "path": "/contas/11080148-a0c9-48ba-b10a-c70651cdd427/repasses", "status": 503, "duration_ms": 5031.0}
 ```
 

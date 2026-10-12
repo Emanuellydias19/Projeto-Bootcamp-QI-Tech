@@ -488,9 +488,10 @@ As rotas genéricas do escopo (`/clientes`, `/transacoes`, `/transferencias`) fo
 | GET | `/contas/{chave}/saldo` | Devolver os saldos e a data do último lançamento | a chave no caminho | 200 | 404 conta |
 | POST | `/transacoes/{chave}/estornos` | Estornar uma transação, com lançamentos de sinal invertido | header `Idempotency-Key` | 201; 200 na repetição idêntica | 404 transação; 409 transação já estornada ou que é um estorno; 409 recebimento com outro posterior não estornado na cobrança; 409 saldo insuficiente para desfazer; 409 chave repetida com outra transação |
 | GET | `/health_check/ready` | Dizer se a API está pronta para tráfego, consultando o banco (DD39) | nenhuma; dispensa o token | 200 com `{"status": "pronto", "banco": "ok"}` | 503 banco sem resposta |
+| GET | `/contas/{chave}/devido` | Dizer quanto o inquilino da conta deve numa data, somando as cobranças não quitadas (DD43) | query `data` (opcional) | 200 com os totais, as cobranças e os recebimentos de cada uma | 404 conta; 422 data inexistente ou anterior a um recebimento não estornado |
 | GET | `/metrics` | Expor as métricas RED no formato de texto do Prometheus (DD39) | nenhuma | 200 | 403 sem o token |
 
-Todas as rotas acima, menos a `/health_check/ready`, também exigem o header `INTERNAL-TOKEN` do projeto base (sem ele, **403**). As duas últimas são operacionais: servem ao orquestrador e ao monitoramento, e estão explicadas em [producao.md](../producao.md).
+Todas as rotas acima, menos a `/health_check/ready`, também exigem o header `INTERNAL-TOKEN` do projeto base (sem ele, **403**). A consulta do devido está detalhada em 7.2.12. As duas últimas são operacionais: servem ao orquestrador e ao monitoramento, e estão explicadas em [producao.md](../producao.md).
 
 As rotas da **cobrança** (T25 e T28) estão detalhadas em 7.2.8, 7.2.9 e 7.2.10, e a do estorno (T37 e DD04) em 7.2.11. Os campos `multa_bps` e `juros_mensal_bps` na abertura de conta vêm da decisão T18.
 
@@ -585,7 +586,7 @@ Um catálogo único, no padrão `QIT` da base (Time, T31). Cada erro tem um cód
 | `QIT001024` | 409 | transação já estornada, ou que é ela mesma um estorno |
 | `QIT001025` | 422 | data ou competência com o formato certo que não existe no calendário (por exemplo, `2026-02-30` ou `2026-13`, DD31) |
 | `QIT001026` | 422 | repasse com valor bruto maior que zero e menor ou igual à taxa pendente (T40 e DD25) |
-| `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento não estornado da cobrança; ou, na consulta da cobrança, `data` anterior a esse recebimento (DD21) |
+| `QIT001027` | 422 | `pago_em` no futuro, ou anterior a um recebimento não estornado da cobrança; ou, na consulta da cobrança e na consulta do devido da conta, `data` anterior a esse recebimento (DD21 e DD43) |
 | `QIT001028` | 409 | estorno de um recebimento quando a cobrança tem um recebimento posterior não estornado (DD35) |
 | `QIT001029` | 422 | operação que levaria o saldo disponível ou o reservado acima de 9007199254740991 (DD37) |
 
@@ -611,6 +612,7 @@ Um imóvel com aluguel de R$ 1.500,00, condomínio de R$ 350,00 e IPTU de R$ 150
 | POST | `/contas/{chave}/repasses` | sim | 201; 200 na repetição |
 | GET | `/contas/{chave}/extrato` | não | 200 |
 | GET | `/contas/{chave}/saldo` | não | 200 |
+| GET | `/contas/{chave}/devido` | não | 200 |
 | POST | `/transacoes/{chave}/estornos` | sim (T22) | 201; 200 na repetição |
 
 ---
@@ -1384,6 +1386,106 @@ POST /transacoes/f2b8d4a6-1c3e-4d5f-a7b9-0e2c4a6f8d13/estornos
 
 ---
 
+### 7.2.12 GET /contas/{chave}/devido
+
+**O que a operação faz?**
+
+> Responde quanto o inquilino da conta deve numa data: soma as cobranças que não estão quitadas nessa data, com o principal em aberto, a multa, os juros, o que já foi pago e o total devido de cada uma, e mostra os recebimentos considerados. Na ORCA o inquilino não é uma entidade: quem deve é quem tem cobranças em aberto na conta do imóvel (DD43). Rota incluída na revisão de 11/10/2026.
+
+**O que recebe?**
+
+> A `chave` da conta no caminho e, na query, a `data` (opcional, `AAAA-MM-DD`; se não vier, vale a data de hoje em São Paulo) (DD22).
+
+**O que devolve?**
+
+> **200** com a `data` usada no cálculo; os percentuais de multa e de juros da conta, que são os parâmetros do cálculo (DD42); os totais da conta; e a lista das cobranças não quitadas. Cada cobrança traz o `status` calculado (DD23), o total em aberto dos itens, a multa e os juros ainda devidos, o total pago, o total devido na data e os seus recebimentos, com o valor, a data do pagamento, a data e hora do registro e se foi estornado. Os valores de cada cobrança são os mesmos de `GET /cobrancas/{chave}` para a mesma data, porque saem do mesmo cálculo.
+
+**Headers:** `INTERNAL-TOKEN`.
+
+**Caminho:** `{chave}` é a `conta_chave`.
+
+Exemplo: conta com multa de 2% e juros de 1% ao mês. A cobrança de setembro venceu em 05/09 e recebeu R$ 1.800,00 nesse dia; a de outubro, de R$ 2.000,00 de aluguel, venceu em 05/10 e não recebeu nada. A consulta é para 15/10.
+
+**Exemplo de requisição:**
+
+```http
+GET /contas/3fbf83e9-e5fc-4e0f-8427-db6a1a50f964/devido?data=2026-10-15
+```
+
+**Exemplo de resposta 200:**
+
+```json
+{
+  "conta_chave": "3fbf83e9-e5fc-4e0f-8427-db6a1a50f964",
+  "data": "2026-10-15",
+  "multa_bps": 200,
+  "juros_mensal_bps": 100,
+  "total_em_aberto_centavos": 220000,
+  "multa_centavos": 4400,
+  "juros_centavos": 932,
+  "total_pago_centavos": 180000,
+  "total_devido_na_data_centavos": 225332,
+  "cobrancas": [
+    {
+      "cobranca_chave": "c4a2e8f1-5b3d-4e7a-8c9f-2d1b6a0e4f37",
+      "competencia": "2026-09",
+      "vencimento": "2026-09-05",
+      "status": "parcial",
+      "total_em_aberto_centavos": 20000,
+      "multa_centavos": 400,
+      "juros_centavos": 266,
+      "total_pago_centavos": 180000,
+      "total_devido_na_data_centavos": 20666,
+      "recebimentos": [
+        {
+          "recebimento_chave": "9b1d6f3e-2a4c-4d8e-b7f5-0c3a1e2d4f60",
+          "transacao_chave": "6f1c2d3e-4a5b-4c6d-9e7f-8a9b0c1d2e3f",
+          "pago_em": "2026-09-05",
+          "criado_em": "2026-09-05T14:30:00Z",
+          "valor_centavos": 180000,
+          "estornado": false
+        }
+      ]
+    },
+    {
+      "cobranca_chave": "d5b3f9a2-6c4e-4f8b-9d0a-3e2c7b1f5a48",
+      "competencia": "2026-10",
+      "vencimento": "2026-10-05",
+      "status": "aberta",
+      "total_em_aberto_centavos": 200000,
+      "multa_centavos": 4000,
+      "juros_centavos": 666,
+      "total_pago_centavos": 0,
+      "total_devido_na_data_centavos": 204666,
+      "recebimentos": []
+    }
+  ]
+}
+```
+
+A conta do exemplo, pela fórmula da DD20: em setembro restam R$ 200,00 em aberto há 40 dias, então a multa é `⌊20000 × 200 ÷ 10000⌋` = 400 e os juros são `⌊20000 × 40 × 100 ÷ 300000⌋` = 266; em outubro, R$ 2.000,00 em aberto há 10 dias dão multa de 4000 e juros de 666. Os totais da conta são a soma das linhas, sem novo cálculo sobre a soma.
+
+**Quais regras de negócio são executadas?**
+
+> Nenhuma escrita, nenhuma trava. Para cada cobrança da conta, a API calcula a posição na `data` com a mesma função da 7.2.10 e deixa de fora as quitadas, que não devem nada (DD43). A cobrança que ainda não venceu entra, com multa e juros zero e o vencimento na linha. Os recebimentos estornados aparecem marcados e não contam nos totais (DD35).
+
+**Quais situações bloqueiam a operação?**
+
+> Conta inexistente, ou `data` anterior a um recebimento não estornado de qualquer cobrança da conta, inclusive de uma cobrança já quitada (DD21 aplicada à conta): a posição antes de um pagamento já lançado não é reconstruída.
+
+**Quais erros podem acontecer?**
+
+| Situação | HTTP | Código de erro |
+| --- | ---: | --- |
+| Conta inexistente (ou não é sua conta) | 404 | `QIT001011` |
+| `data` fora do formato, ou parâmetro desconhecido | 400 | `QIT000001` (projeto base) |
+| `data` inexistente no calendário | 422 | `QIT001025` |
+| `data` anterior a um recebimento não estornado de alguma cobrança da conta (DD21 e DD43) | 422 | `QIT001027` |
+
+> **Limites desta rota (DD43):** não pagina, não filtra só as cobranças vencidas e não mostra os itens de cada cobrança, que continuam na 7.2.10. Numa data passada, entram também as cobranças registradas depois dela, como cobranças a vencer.
+
+---
+
 ## 8. Fluxos
 
 Depois de fechar as rotas, devemos desenhar os fluxos das principais operações.
@@ -1555,6 +1657,69 @@ Completa a última transação da página, sem cortá-la ao meio
 
 > * **Paginação por cursor**, e não por número de página (RFC). O cursor não se desloca quando entram lançamentos novos no topo, então uma página nunca repete nem pula linhas.
 > * **Uma transação nunca fica partida entre páginas**, para que o rateio de um recebimento apareça inteiro. Por isso uma página pode ter mais linhas que o `limite` (T32).
+
+---
+
+## 8.6 Jornada do recebimento: do pagamento do inquilino à atualização dos registros
+
+**Registro não é movimentação de dinheiro (DD11).** O inquilino paga à administradora por boleto, PIX ou outro meio, e o dinheiro entra na conta bancária dela. Isso acontece fora da ORCA. O recebimento da ORCA é o registro desse fato: o operador informa quanto foi pago (`valor_centavos`) e em que dia (`pago_em`), e a ORCA atualiza a posição do proprietário. A ORCA não consulta o banco, não confere comprovante e não move dinheiro. Por isso:
+
+* existem duas datas: `pago_em`, a data do pagamento informada pelo operador, e `criado_em`, o momento do registro (DD19);
+* o saldo da conta é a posição registrada, e não o saldo bancário; a conciliação com o extrato do banco está fora da Fase 1 (1.3);
+* o 422 de valor acima do devido recusa o registro, e não o dinheiro: o excedente fica fora do sistema e é tratado pelo operador (T19);
+* o estorno de um recebimento corrige o registro; devolver dinheiro ao inquilino, se for o caso, é feito pela administradora fora da ORCA;
+* o recebimento do inquilino não se confunde com o repasse: o recebimento põe dinheiro na conta do proprietário, e o repasse, que é outra operação e outra rota (7.2.5), tira o que pode ser entregue a ele.
+
+**Ordem real de execução.** As nove etapas abaixo seguem a ordem da jornada. No código, a conferência do formato (etapa 2) roda antes da busca da cobrança (etapa 1), e as etapas 4, 5 e 6 são enviadas juntas ao banco, depois de todas as regras, seguidas do COMMIT. Tudo acontece em `TransacaoController.receber`, dentro de uma única transação de banco, com a conta travada.
+
+| Etapa | Tabela consultada | Tabela alterada | Componente | Validações e respostas de erro | O que acontece numa falha |
+| --- | --- | --- | --- | --- | --- |
+| 1. Identificação da cobrança que será paga | `cobranca`, pela `chave` do caminho, com os itens de `item_cobranca` | nenhuma | `TransacaoController.receber`, `BaseController._get_or_raise`, `CobrancaRepository.get_by_chave` | chave fora do formato UUID ou inexistente: 404 `QIT001015` (T28, DD09) | responde 404 antes de qualquer trava; nada é lido da conta e nada é gravado |
+| 2. Recebimento da informação de pagamento | nenhuma | nenhuma | middlewares `internal_token` e `body_limit`; `TransacaoResource.on_post_recebimento`; `SchemaHandler.validate` com `post_cobranca_recebimento.json`; `SchemaHandler.validate_idempotency_key` | sem `INTERNAL-TOKEN`: 403 `QIT000002`; corpo sem tamanho declarado: 411 `QIT000411`; corpo acima de 65536 bytes: 413 `QIT000413`; corpo fora do schema (campo faltando, tipo errado, casa decimal, valor acima de 9007199254740991, campo desconhecido): 400 `QIT000001`; `Idempotency-Key` ausente, vazia ou com mais de 255 caracteres: 400 `QIT000001` | a requisição para antes do controller; o banco não é consultado |
+| 3. Validação do valor e da situação da cobrança | `conta` (com `SELECT ... FOR UPDATE`), `item_cobranca` (releitura com a conta travada), `transacao` (chave de idempotência da conta), `lancamento` com `recebimento` (recebimentos não estornados da cobrança), `politica_imputacao` | nenhuma; só a trava na linha da conta | `ContaRepository.get_by_id_for_update`, `CobrancaRepository.refresh_itens`, `TransacaoController._get_transacao_anterior`, `_check_valor`, `_check_pago_em`, `_check_teto_dos_saldos`, `LancamentoRepository.list_pagamentos_da_cobranca`, `utils/posicao_cobranca.calcular_posicao`, `utils/multa_juros` | nesta ordem: repetição idêntica, 200 com o resultado guardado; mesma chave com outro pedido, 409 `QIT001022`; valor menor ou igual a zero, 422 `QIT001018`; `pago_em` inexistente no calendário, 422 `QIT001025`; `pago_em` no futuro (data de São Paulo) ou anterior ao último recebimento não estornado, 422 `QIT001027`; valor acima do devido na data (aberto mais multa mais juros), 422 `QIT001019`; saldo acima de 9007199254740991, 422 `QIT001029`; trava não obtida em 5 s, 503 `QIT000503` com `Retry-After: 1` | o erro vira resposta, o `session_manager` fecha a sessão e a transação de banco é desfeita; a trava é liberada; nada foi escrito, porque nenhuma escrita vem antes das regras (DD17) |
+| 4. Registro do recebimento e da identidade da transação | nenhuma além das da etapa 3 | `transacao` (INSERT): `chave` (UUID, a identidade pública da operação), `tipo` recebimento, `conta_id`, `chave_idempotencia`, `hash_requisicao`, `resultado`, `criado_em`; `recebimento` (INSERT): `chave`, `transacao_id`, `cobranca_id`, `valor_centavos`, `pago_em`, `criado_em` (DD41) | `TransacaoRepository.create` e `set_resultado`, `RecebimentoRepository.create`, `TransacaoController._guardar_resultado`, `utils/idempotency.hash_requisicao` | rede do banco: `uq_transacao_chave`, `uq_transacao_conta_idempotencia` (a violação vira 409 `QIT001022`), `ck_transacao_tipo`, `fk_recebimento_transacao`, `uq_recebimento_transacao`, `fk_recebimento_cobranca`, `ck_recebimento_valor` | a transação de banco inteira é desfeita, inclusive a linha de idempotência e a de recebimento; um reenvio com a mesma chave executa de novo (DD18) |
+| 5. Associação do recebimento à cobrança e aos itens | a posição calculada na etapa 3 | `recebimento.cobranca_id` (a cobrança paga); `lancamento` (INSERT, um por parcela do rateio, com `natureza`, `valor_centavos` positivo e `item_cobranca_id` do item quitado; nulo em multa e juros) | `utils/imputacao.imputar`, `TransacaoController._lancar`, `LancamentoRepository.create` | ordem da política da conta (v1: juros, multa, condomínio, IPTU, aluguel, despesa extra, DD24); o encargo incompleto não é pulado (RN13); rede do banco: `ck_lancamento_natureza`, `ck_lancamento_valor`, `fk_lancamento_item_cobranca` | igual à etapa 4: nenhum lançamento órfão |
+| 6. Atualização do saldo da conta | `conta`, a linha já travada | `conta.saldo_disponivel` e `conta.saldo_reservado` (UPDATE) | `TransacaoController._lancar` e `_variacoes_dos_saldos`, `ContaRepository.update_saldos` | condomínio e IPTU somam no reservado; aluguel, multa, juros e despesa extra, no disponível (T13, T39); rede do banco: `ck_conta_saldo_disponivel` e `ck_conta_saldo_reservado`, de 0 a 9007199254740991 | recebimento, lançamentos e saldos nascem no mesmo COMMIT ou não nascem (T01): não existe recebimento confirmado sem o saldo atualizado |
+| 7. Atualização da situação da cobrança | `cobranca`, `item_cobranca`, `lancamento` com `recebimento` e `conta`, a cada cálculo | nenhuma: a `cobranca` não tem coluna de status | `utils/posicao_cobranca._status`, chamada por `calcular_posicao` em `CobrancaController.get_by_chave`, `get_devido_da_conta` e `add_item`, e em `TransacaoController.receber` | `aberta`: nada pago; `parcial`: algo pago e ainda há valor devido; `quitada`: nada mais devido, contando itens, multa e juros (DD23, T43) | não há o que desfazer: sem recebimento gravado, o próximo cálculo devolve o status de antes |
+| 8. Registro das informações de rastreabilidade | nenhuma | as mesmas linhas de `transacao`, `recebimento` e `lancamento` das etapas 4 e 5; fora do banco, o log da requisição | `TransacaoRepository`, `RecebimentoRepository`, `LancamentoRepository`, middlewares `request_context` e `request_logger` | nada é alterado nem apagado depois (T10); a correção é um estorno que aponta para a transação original por `transacao_estornada_id`, única (DD04); a resposta traz o `X-Request-ID` | nos erros previstos, o log registra a entrada e a saída com o `request_id` e o status; no banco não fica nada da tentativa |
+| 9. Disponibilização no extrato, no saldo e no devido | saldo: `conta` e `lancamento`; extrato: `lancamento` com `transacao`; cobrança e devido: `cobranca`, `item_cobranca`, `lancamento`, `recebimento` e `transacao` | nenhuma | `ContaController.get_saldo` e `get_extrato`, `LancamentoRepository._query_extrato`, `CobrancaController.get_by_chave` e `get_devido_da_conta` | conta inexistente: 404 `QIT001011`; cobrança inexistente: 404 `QIT001015`; `limite` fora de 1 a 50, natureza fora da lista, parâmetro desconhecido ou cursor inválido: 400 `QIT000001` | leituras sem trava e sem commit (DD36); uma falha não altera nada e pode ser repetida |
+
+**Equivalência dos nomes do status.** O status é calculado, e não gravado (DD23). Na API ele se chama `aberta`, `parcial` e `quitada`: `aberta` é a cobrança pendente, sem nenhum pagamento; `parcial` é a que recebeu algum pagamento e ainda tem valor devido; `quitada` é a concluída, sem nada devido em itens, multa e juros. O status depende da data consultada e não existe um status de cobrança vencida: o atraso aparece como `multa_centavos` e `juros_centavos` maiores que zero (DD44).
+
+**O que fica registrado de cada recebimento.** Na `transacao`: a chave pública, a conta, a `Idempotency-Key`, o hash do pedido, a resposta devolvida e o momento do registro. No `recebimento`: a chave própria, a cobrança paga, o valor recebido, a data do pagamento e o momento do registro. No `lancamento`: a natureza, o valor, o item quitado e o momento. O valor e a data do pagamento de cada recebimento aparecem em `GET /contas/{chave}/devido` enquanto a cobrança não está quitada (7.2.12). Não são registrados na Fase 1: o operador que fez o registro, o meio de pagamento e um identificador do pagamento no banco.
+
+## 8.7 Jornada do atraso: da criação da cobrança ao pagamento
+
+A ORCA não tem tarefa agendada. Multa e juros nunca são lançados sozinhos: são calculados quando alguém consulta a cobrança ou registra um recebimento, e só viram lançamento quando um recebimento os paga (DD44).
+
+1. **Criação e vencimento.** O operador cria a cobrança em `POST /contas/{chave}/cobrancas`, com `competencia`, `vencimento` e `itens`. O vencimento é informado no pedido e gravado em `cobranca.vencimento`; a ORCA não o calcula, e não há rota para alterá-lo. Vale uma cobrança por conta e competência (`uq_cobranca_conta_competencia`, 409 `QIT001016`). A cobrança pode ser registrada depois do vencimento: os itens enviados na criação usam o vencimento como referência mesmo assim (DD31). Componentes: `CobrancaController.create` e `CobrancaRepository.create`; tabelas gravadas: `cobranca` e `item_cobranca`.
+2. **Como a ORCA sabe que a cobrança está vencida.** Não há status de vencida nem rotina que marque a cobrança. Ela está em atraso para uma data quando essa data é posterior ao vencimento, em dias corridos; no dia do vencimento ainda não há atraso. A conta é feita em `calcular_posicao`, com a data do pagamento (`pago_em`) no recebimento e, na consulta, com a `data` pedida ou a data de hoje em São Paulo (DD22).
+3. **De onde vêm a multa e os juros.** Dos campos `multa_bps` e `juros_mensal_bps` da conta, fixados na abertura (`POST /contas`, de 0 a 10000 bps, RN10) e lidos na hora do cálculo (T18 e DD42). A política de imputação da conta não define percentuais: define a ordem em que o valor recebido quita as naturezas (v1: juros, multa, condomínio, IPTU, aluguel, despesa extra).
+4. **Quanto é devido numa data.** `total_devido_na_data_centavos` = aberto dos itens + multa + juros (T35, DD20).
+   * Aberto de cada item: o valor devido menos a soma dos lançamentos de recebimentos não estornados que apontam para ele.
+   * Multa: `⌊aberto dos itens na data de referência × multa_bps ÷ 10000⌋`, menos a multa já paga. O que foi pago até a data de referência, inclusive no próprio dia, sai da base. A multa incide uma vez.
+   * Juros: `⌊Σ (aberto do item × dias corridos do trecho) × juros_mensal_bps ÷ (10000 × 30)⌋`, menos os juros já pagos. Os trechos vão da data de referência a cada pagamento e, por fim, até a data.
+   * Data de referência: o vencimento; para um item incluído depois do vencimento, a data da inclusão (T42).
+   * O truncamento é feito uma vez sobre o total, e não há juros sobre multa nem sobre juros (T17, T43). A base são todos os itens da cobrança, inclusive condomínio e IPTU, e a multa e os juros recebidos entram no saldo disponível do proprietário (T13).
+5. **Pagamento parcial abaixo do devido.** É aceito quando é maior que zero e não passa do devido na data. O valor é imputado na ordem da política: primeiro os juros, depois a multa, depois os itens. A ORCA grava uma transação, um recebimento e um lançamento por parcela, e a resposta traz o `rateio` e o `em_aberto`, que inclui a multa e os juros não cobertos (T43).
+6. **Saldo em aberto depois do pagamento.** Nenhum saldo devedor é guardado: a posição é recalculada, a cada consulta ou recebimento, a partir dos itens e dos lançamentos. A multa não é recalculada: a posição mostra a multa total menos o que já foi pago dela. Os juros continuam correndo só sobre o que ficou em aberto dos itens, a partir da data desse pagamento. O recebimento seguinte não pode ter `pago_em` anterior (422 `QIT001027`).
+7. **Quando a cobrança fica quitada.** Quando algo foi pago e o devido na data é zero: itens, multa e juros (T43, DD23). Nada é gravado. A partir daí, a inclusão de item é recusada (409 `QIT001017`), um novo recebimento é recusado por estar acima do devido (422 `QIT001019`) e a cobrança sai da consulta do devido da conta.
+8. **Estornos e novas consultas.** O estorno (`POST /transacoes/{chave}/estornos`) grava uma transação nova com os lançamentos invertidos e não altera a original nem a linha do recebimento. A posição passa a ignorar o recebimento estornado: o valor volta ao aberto, a multa e os juros que ele pagou voltam a ser devidos e o status recua (DD35). Só o último recebimento não estornado pode ser estornado (409 `QIT001028`), e o saldo precisa cobrir o desfazer (409 `QIT001020` ou `QIT001021`). As consultas não gravam nada: cada `GET /cobrancas/{chave}?data=` ou `GET /contas/{chave}/devido?data=` recalcula a posição; uma data futura serve para simular, e uma data anterior ao último recebimento não estornado responde 422 `QIT001027` (DD21). O histórico que permanece é o dos lançamentos, visível no extrato, com o recebimento e o estorno lado a lado.
+
+**Os oito casos.** Exemplos com multa de 200 bps e juros de 100 bps ao mês, os mesmos dos testes.
+
+| Caso | O que a ORCA faz | Regra | Exemplo numérico |
+| --- | --- | --- | --- |
+| Pagamento antes do vencimento | Sem multa e sem juros; o devido é o aberto dos itens; não há desconto por antecipação; o `pago_em` não pode estar no futuro | RN14, DD20, DD21 | Cobrança de 200000 com vencimento em 2026-10-05: em 2026-09-01, multa 0, juros 0, devido 200000 (teste `test_has_no_encargos_up_to_the_vencimento`) |
+| Pagamento no vencimento | Sem multa e sem juros: só há atraso depois do vencimento; o que foi pago até esse dia sai da base da multa | RN14, DD20 | 180000 pagos no vencimento sobre aluguel 150000, condomínio 35000 e IPTU 15000: rateio condomínio 35000, IPTU 15000, aluguel 130000; em aberto aluguel 20000; saldos 130000 disponível e 50000 reservado; status `parcial` (7.2.3 e teste `test_imputes_a_partial_payment_in_the_order_of_the_politica`) |
+| Pagamento após o vencimento | Soma multa (uma vez) e juros (por dia corrido) ao aberto; aceita até esse total; paga juros, depois multa, depois os itens; multa e juros entram no disponível | RN14, T18, T35, T13, DD20 | Aluguel de 200000 pago 10 dias depois: multa `⌊200000 × 200 ÷ 10000⌋` = 4000, juros `⌊200000 × 10 × 100 ÷ 300000⌋` = 666; recebimento de 204666 vira juros 666, multa 4000, aluguel 200000; 204667 responde 422 `QIT001019` (teste `test_pays_juros_and_multa_first_when_late`) |
+| Pagamento parcial após o vencimento | Aceita; paga juros, depois multa, depois os itens; a multa e os juros não cobertos continuam devidos e não rendem juros; a multa não é cobrada de novo; os juros seguem sobre o aberto dos itens | T18, T43, DD20, DD32 | Aluguel de 200000; 2000 pagos 10 dias depois viram juros 666 e multa 1334; ficam em aberto multa 2666 e aluguel 200000; aos 20 dias: multa 2666, juros 667, devido 203333; o pagamento de 203333 quita (teste `test_keeps_unpaid_multa_and_juros_owed`) |
+| Ausência de pagamento | Nada é gravado e nada muda sozinho: status `aberta`, saldos intactos; multa e juros só aparecem no cálculo de quem consulta | DD05, DD22, DD23, DD44 | Aluguel de 200000 com vencimento em 2026-10-05: consulta em 2026-10-06 mostra multa 4000, juros 66, devido 204066; em 2026-10-15, multa 4000, juros 666, devido 204666 (teste `test_calculates_multa_and_juros_after_the_vencimento`) |
+| Pagamento recebido em duplicidade | Mesmo pedido com a mesma `Idempotency-Key`: 200 com o resultado original, sem novo efeito; mesma chave com outro pedido: 409 `QIT001022`; novo registro com outra chave: recusado com 422 `QIT001019` se passar do devido, e aceito como pagamento parcial se couber | RN03, T03, DD18, RN12, T19 | 50000 enviados duas vezes com a mesma chave: 201 e 200, saldo total 50000 (`test_recebimento_idempotencia.py`, teste `test_returns_the_original_result_when_repeated`); cinco recebimentos de 50000 com chaves diferentes numa cobrança de 200000: quatro 201 e um 422, disponível 200000 (teste `test_never_records_more_than_what_is_owed_when_payments_arrive_at_the_same_time`) |
+| Estorno de um recebimento | Grava uma transação de estorno com os lançamentos invertidos; a cobrança volta à posição que teria sem aquele recebimento; só o último recebimento não estornado; recusa se o saldo não cobre | T22, T37, DD04, DD33, DD35 | Recebimento de 200000 estornado: saldos 0 e 0; status `aberta`; devido 200000 (teste `test_reverses_a_recebimento_and_reopens_the_cobranca`). Estornar o primeiro de dois recebimentos: 409 `QIT001028` |
+| Inclusão de um novo item numa cobrança já vencida | Só a natureza `despesa_extra`, e só em cobrança não quitada (quitada: 409 `QIT001017`); sem encargos retroativos: a referência do item é a data da inclusão; os outros itens seguem com multa e juros desde o vencimento | T21, T36, T42, RN15, DD31, DD40 | Vencimento há 10 dias, aluguel de 200000, despesa extra de 30000 incluída hoje: hoje, multa 4000, juros 666, devido 234666 (a despesa entra sem encargos); daqui a 5 dias, multa 4600, juros 1050, devido 235650 (teste `test_item_included_after_the_vencimento_has_no_retroactive_encargos`) |
+
+O pagamento registrado duas vezes com chaves de idempotência diferentes não é detectado, porque o recebimento não guarda um identificador do pagamento no banco. Se ele couber no devido, entra como outro pagamento parcial; a correção é estornar o último recebimento. É um limite declarado da Fase 1 (seção 13).
 
 ---
 
@@ -1860,17 +2025,53 @@ O `cobranca_id` liga o recebimento inteiro à cobrança, inclusive os lançament
 
 **Por que o recebimento tem tabela e o repasse não (12.4):** o recebimento tem dados que são só dele (a cobrança paga, a data efetiva do pagamento e o valor informado); o repasse e o pagamento de encargo não têm nenhum dado próprio além dos lançamentos.
 
+## 12.9 Parâmetro, fato e valor calculado
+
+A política define as regras do cálculo; a cobrança e os recebimentos guardam os fatos; os valores devidos são sempre calculados. Nenhum valor financeiro é guardado em dois lugares.
+
+| Dado | O que é | Onde mora | Observação |
+| --- | --- | --- | --- |
+| Percentual da multa por atraso | parâmetro | `conta.multa_bps` | fixado na abertura da conta; não há rota que altere (DD42) |
+| Percentual dos juros ao mês | parâmetro | `conta.juros_mensal_bps` | fixado na abertura da conta (DD42) |
+| Taxa de administração | parâmetro | `conta.taxa_administracao_bps` | fixada na abertura da conta (DD42) |
+| Ordem em que o pagamento quita as naturezas | parâmetro | `politica_imputacao.ordem_naturezas` | política versionada, apontada pela conta (T04) |
+| Fórmulas da multa e dos juros, e o arredondamento | regra | código (`utils/multa_juros.py` e `utils/posicao_cobranca.py`) | DD20 e T17 |
+| Valor original da cobrança | fato | soma de `item_cobranca.valor_devido_centavos` | nunca alterado |
+| Data de vencimento | fato | `cobranca.vencimento` | informada na criação |
+| Data de inclusão de um item incluído depois | fato | `item_cobranca.criado_em` | referência dos encargos desse item (T42 e DD40) |
+| Valor recebido e data do pagamento | fato | `recebimento.valor_centavos` e `recebimento.pago_em` | um por recebimento (DD41) |
+| Quanto cada item recebeu | fato | `lancamento.valor_centavos`, com o `item_cobranca_id` | um lançamento por parcela do rateio |
+| Multa e juros efetivamente pagos | fato | lançamentos de natureza `multa` e `juros` do recebimento | só existem quando um recebimento os paga |
+| Dias em atraso | calculado | não é guardado | a data consultada menos a data de referência |
+| Multa aplicável, juros acumulados e total devido numa data | calculado | não é guardado | `calcular_posicao`, a cada consulta e a cada recebimento (DD20) |
+| Valor já pago e saldo ainda em aberto | calculado | não é guardado | o devido dos itens menos os lançamentos dos recebimentos não estornados (12.7) |
+| Situação da cobrança (aberta, parcial ou quitada) | calculado | não é guardado | DD23 |
+
+**Histórico dos parâmetros.** Na Fase 1 os percentuais da conta não mudam depois da abertura, então toda cobrança da conta é calculada com os mesmos parâmetros do começo ao fim (DD42). O que já foi pago de multa e de juros está gravado como lançamento, que é um fato e não é recalculado. Uma rota que altere os percentuais exigiria antes copiar os valores usados para cada cobrança, para que a alteração não mude os encargos das cobranças já existentes; essa rota não existe e está na lista da seção 13.
+
 ---
 
 ## 13. Decisões em aberto
 
 Tudo que ainda não foi decidido deve ficar explícito.
 
+Nenhuma regra das rotas implementadas está em aberto. A lista abaixo reúne o que continua **não definido** e fica fora da Fase 1. Onde o código precisa de um comportamento, ele é o descrito na decisão citada, e não uma regra inventada.
+
 | ID | Questão | Responsável | Status |
 | --- | --- | --- | --- |
-| | Nenhuma decisão em aberto. | | |
+| N01 | Hora do pagamento efetivo: o recebimento guarda só a data (`pago_em`, DD19) e a data e hora do registro | Time | Não definido |
+| N02 | Pagamento registrado duas vezes com chaves de idempotência diferentes: não é detectado, porque o recebimento não guarda um identificador do pagamento no banco; a correção é estornar o último recebimento (8.7) | Time | Não definido |
+| N03 | Destino do valor pago a mais pelo inquilino: o registro é recusado e o excedente é tratado fora do sistema (T19); devolução ou crédito para a competência seguinte | Time | Não definido |
+| N04 | Entidade inquilino e troca de inquilino no mesmo imóvel: hoje quem deve é quem tem cobranças em aberto na conta (DD43) | Time | Não definido |
+| N05 | Rota que altere a multa, os juros ou a taxa de uma conta: exige antes copiar os percentuais usados para cada cobrança (DD42) | Time | Não definido |
+| N06 | Status e listagem de cobranças vencidas, notificação ao inquilino e negativação | Time | Não definido |
+| N07 | Vencimento em dia não útil, desconto por antecipação, correção monetária e teto ou prazo máximo dos juros | Time | Não definido |
+| N08 | Alteração de vencimento, cancelamento de cobrança e remoção de um item incluído por engano | Time | Não definido |
+| N09 | Reenvio da inclusão de item: a rota não usa `Idempotency-Key`, então um reenvio cria outra despesa extra | Time | Não definido |
+| N10 | Paginação e filtro só das vencidas na consulta do devido da conta (DD43) | Time | Não definido |
+| N11 | Garantia, no banco, de que toda transação do tipo `recebimento` tem a sua linha em `recebimento`: hoje é garantida pelo código (12.8 e DD41) | Time | Não definido |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. A DD41 é decisão de 11/10/2026. As DD31 a DD36 e as DD38 a DD40 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. A DD41 é decisão de 11/10/2026. As DD31 a DD36, as DD38 a DD40 e as DD42 a DD44 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1977,6 +2178,9 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD39 | *Derivado, aguarda revisão:* **produção (Aula 4).** (a) O log sai em JSON, uma linha por evento em stdout, com `request_id`, `method`, `path`, `status` e `duration_ms` como campos; a linha de acesso do uvicorn, que repetia a de saída sem o `request_id`, foi desligada, e as outras linhas do uvicorn passam pelo mesmo formato. (b) `GET /metrics` expõe as métricas RED (`orca_http_requests_total` e `orca_http_request_duration_seconds`), rotuladas pelo molde da rota e nunca pela chave, com os métodos incomuns juntos em `OUTRO`, e exige o `INTERNAL-TOKEN`. (c) `GET /health_check/ready` responde se a API está pronta para tráfego, com um `SELECT 1`; o `/health_check` continua sem tocar no banco, para que uma queda do banco não reinicie a API. A prontidão dispensa o token e é a que o healthcheck do compose usa. (d) Toda conexão com o banco tem `lock_timeout` de 5 s, `statement_timeout` de 15 s e `connect_timeout` de 3 s; estourou, ou o banco está fora do ar, a resposta é 503 (`QIT000503`) com `Retry-After: 1`, e a transação é desfeita. (e) O corpo tem até 65536 bytes (413, `QIT000413`) e precisa declarar o tamanho (411, `QIT000411`); a cobrança é criada com até 100 itens (400). (f) Fora dos ambientes `local` e `test`, a API não sobe com o `INTERNAL_TOKEN` padrão nem com um de menos de 32 caracteres (a regra nega por padrão), e o token é comparado em tempo constante. As respostas às 9 perguntas da Aula 4 estão em [producao.md](../producao.md) | Aula 4 (Produção), OWASP API Security Top 10 2023, DD16, DD18, DD38 |
 | DD40 | *Derivado, aguarda revisão:* **item enviado na criação e item incluído depois.** A API separa os dois pelo `criado_em`: os itens enviados na criação nascem na mesma transação da cobrança e têm exatamente o mesmo `criado_em` dela; qualquer item com outro `criado_em` foi incluído depois (7.2.9) e segue a T42 e a DD31. A comparação é por igualdade, e não pela ordem dos dois horários, porque o relógio do banco pode recuar num ajuste de hora: com a comparação pela ordem, um item incluído logo depois de um recuo era tratado como item da criação, ganhava multa e juros retroativos e entrava num recebimento com data anterior à inclusão. O defeito apareceu numa rodada da suíte em que o relógio do Docker recuou 0,41 s; dois testes simulam o recuo adiantando o `criado_em` da cobrança direto no banco e conferem o resultado por HTTP | T42, DD22, DD31 |
 | DD41 | **Tabela `recebimento` (decisão de 11/10/2026).** Cada pagamento do inquilino passa a ter uma linha própria na tabela `recebimento`, ligada uma para uma à sua transação, com identificador próprio (`id` e `chave`), a cobrança paga, o valor recebido, a data do pagamento e a data e hora do registro (12.8). As colunas `cobranca_id` e `pago_em` saem da transação, com as restrições `ck_transacao_cobranca` e `ck_transacao_pago_em`; entra a chave estrangeira composta `(transacao_id, transacao_tipo)`, que só aceita uma transação do tipo `recebimento`. O contrato das rotas não muda: o recebimento continua respondendo `transacao_chave`, `rateio` e `em_aberto`, e o estorno continua pela chave da transação. A regra de que toda transação de recebimento tem a sua linha em `recebimento`, e de que o valor é igual à soma dos lançamentos, passa a ser garantida pelo código, na mesma gravação. **Descartado:** manter o recebimento só como linha de `transacao`, que atendia as regras mas não dava ao recebimento um registro próprio com o valor recebido. A T29 e a DD19 continuam valendo no conteúdo; muda a tabela onde os dados moram | T29, DD19, RN16, T10, DD17 |
+| DD42 | *Derivado, aguarda revisão:* **parâmetros de atraso na conta, imutáveis na Fase 1.** A multa, os juros e a taxa de administração moram na conta (T18), são fixados na abertura e não têm rota de alteração. A cobrança não copia esses percentuais: como eles não mudam, toda cobrança da conta é calculada com os mesmos parâmetros do começo ao fim. As fórmulas ficam no código (DD20), e dias em atraso, multa, juros, total devido, pago e aberto são sempre calculados, nunca gravados (12.9). Uma rota que altere os percentuais só pode existir depois de os valores usados serem copiados para cada cobrança (N05) | T18, RN10, DD20, DD23 |
+| DD43 | *Derivado, aguarda revisão:* **consulta do devido por conta** (`GET /contas/{chave}/devido`, 7.2.12). (a) É a soma das cobranças não quitadas na data, cada uma calculada pela mesma função da consulta da cobrança; os totais da conta são a soma das linhas, sem novo cálculo sobre a soma. (b) A cobrança quitada fica fora da lista e dos totais. (c) A cobrança que ainda não venceu entra, com multa e juros zero. (d) Uma `data` anterior ao último recebimento não estornado de qualquer cobrança da conta, inclusive de uma quitada, responde 422 (`QIT001027`): é a DD21 aplicada à conta. (e) O inquilino não é uma entidade: quem deve é quem tem cobranças em aberto na conta (T06 e T14). (f) Cada cobrança lista os seus recebimentos, com os estornados marcados e fora dos totais. (g) Só lê: sem trava, sem gravação e sem paginação. A consulta é um serviço da aplicação que reaproveita o cálculo existente, e não uma view do banco, porque a multa e os juros dependem da data e de regras que estão no código | DD05, DD20, DD21, DD23, DD35, DD41 |
+| DD44 | *Derivado, aguarda revisão:* **jornadas do recebimento e do atraso (8.6 e 8.7).** (a) Não há tarefa agendada: multa e juros são calculados na consulta e no recebimento e só viram lançamento quando um recebimento os paga. (b) O status `aberta`, `parcial` e `quitada` corresponde a pendente, parcial e concluída; não existe status de cobrança vencida, e o atraso aparece como multa e juros maiores que zero. (c) O que continua não definido está listado na seção 13 (N01 a N11) | DD11, DD20, DD23, T43 |
 
 ---
 

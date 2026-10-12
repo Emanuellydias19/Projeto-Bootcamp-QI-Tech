@@ -60,6 +60,7 @@ Além das rotas de negócio abaixo, a API tem duas rotas operacionais: `GET /hea
 | `POST` | `/contas/{chave}/repasses` | Retém a taxa e registra o repasse do líquido ao dono | `valor_centavos` (bruto), `Idempotency-Key` | `201` com taxa e líquido; `200` repetição; `409` disponível insuficiente ou chave reutilizada; `404` conta; `422` valor menor ou igual a zero ou bruto menor ou igual à taxa pendente |
 | `POST` | `/transacoes/{chave}/estornos` | Desfaz uma transação com lançamentos de sinal invertido | sem corpo, `Idempotency-Key` | `201`; `200` repetição; `404` transação; `409` já estornada, recebimento com outro posterior, saldo que não cobre o desfazer ou chave reutilizada; `422` saldo acima do teto |
 | `GET` | `/contas/{chave}/saldo` | Devolve os dois saldos e a data do último lançamento | a chave no caminho | `200`; `404` conta |
+| `GET` | `/contas/{chave}/devido` | Diz quanto o inquilino da conta deve numa data, somando as cobranças não quitadas, com multa, juros e os recebimentos de cada uma | query `data` (padrão: hoje em São Paulo) | `200`; `404` conta; `422` data inexistente ou anterior a um recebimento |
 | `GET` | `/contas/{chave}/extrato` | Lista os lançamentos do mais recente para o mais antigo, sem partir uma transação | query `cursor`, `limite` (1 a 50), `natureza` | `200` com a página e o `proximo_cursor`; `400` limite, natureza ou cursor inválido; `404` conta |
 
 ### Banco de Dados (Somente diagrama)
@@ -204,6 +205,18 @@ erDiagram
 1. O operador pede o estorno de um recebimento cujo aluguel já saiu num repasse.
 2. Com a conta travada, a soma invertida levaria o disponível abaixo de zero.
 3. A API responde `409`, nada é gravado, e o operador estorna antes o repasse, se for o caso.
+
+#### Devido da conta: caminho feliz
+
+1. O schema confere a `data`, e a API localiza a conta; sem a data, vale hoje em São Paulo.
+2. Para cada cobrança da conta, lê os recebimentos não estornados e calcula a posição na data: o aberto dos itens, a multa uma vez só e os juros por dia de atraso.
+3. Deixa de fora as cobranças quitadas e soma as outras, sem recalcular nada sobre a soma.
+4. Responde `200` com os totais, as cobranças e os recebimentos de cada uma. Nada é gravado e a conta não é travada.
+
+#### Devido da conta: falha, uma data anterior a um pagamento
+
+1. O operador pede a posição numa data anterior ao último recebimento de uma cobrança da conta.
+2. A posição antes de um pagamento já lançado não é reconstruída: a API responde `422`, e a consulta vale a partir da data desse recebimento.
 
 #### Extrato: caminho feliz
 
