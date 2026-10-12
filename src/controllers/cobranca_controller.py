@@ -1,3 +1,5 @@
+from datetime import date
+
 from controllers.base_controller import BaseController
 from dtos import CobrancaDTO
 from errors import (
@@ -9,7 +11,7 @@ from errors import (
     NotFoundConta,
 )
 from models import Cobranca
-from repositories import CobrancaRepository, ContaRepository, LancamentoRepository
+from repositories import CobrancaRepository, ContaRepository, LancamentoRepository, RecebimentoRepository
 from utils.dates import is_valid_competencia, today_in_sao_paulo
 from utils.posicao_cobranca import STATUS_QUITADA, calcular_posicao, data_do_ultimo_pagamento
 
@@ -20,6 +22,7 @@ class CobrancaController(BaseController):
         self.cobranca_repository = CobrancaRepository(self.context)
         self.conta_repository = ContaRepository(self.context)
         self.lancamento_repository = LancamentoRepository(self.context)
+        self.recebimento_repository = RecebimentoRepository(self.context)
 
     def create(self, conta_chave: str, cobranca_data: dict) -> dict:
         self.logger.debug("Registrando uma nova cobranca")
@@ -71,16 +74,38 @@ class CobrancaController(BaseController):
         cobranca = self._get_or_raise(self.cobranca_repository, cobranca_chave, NotFoundCobranca)
         pagamentos = self.lancamento_repository.list_pagamentos_da_cobranca(cobranca)
 
-        if data_texto is None:
-            data = today_in_sao_paulo()
-        else:
-            data = self._parse_date_or_raise("data", data_texto)
-
-        ultimo_pagamento = data_do_ultimo_pagamento(pagamentos)
-
-        if ultimo_pagamento is not None and data < ultimo_pagamento:
-            raise InvalidPagoEm("data", data.isoformat())
+        data = self._data_da_consulta(data_texto)
+        self._check_data_depois_dos_pagamentos(data, pagamentos)
 
         posicao = calcular_posicao(cobranca, cobranca.conta, pagamentos, data)
 
         return CobrancaDTO.obj_to_dict(cobranca, posicao)
+
+    def get_devido_da_conta(self, conta_chave: str, data_texto: str) -> dict:
+        conta = self._get_or_raise(self.conta_repository, conta_chave, NotFoundConta)
+        data = self._data_da_consulta(data_texto)
+
+        linhas = []
+        for cobranca in self.cobranca_repository.list_by_conta(conta):
+            pagamentos = self.lancamento_repository.list_pagamentos_da_cobranca(cobranca)
+            self._check_data_depois_dos_pagamentos(data, pagamentos)
+
+            posicao = calcular_posicao(cobranca, conta, pagamentos, data)
+
+            if posicao["status"] != STATUS_QUITADA:
+                recebimentos = self.recebimento_repository.list_by_cobranca(cobranca)
+                linhas.append({"cobranca": cobranca, "posicao": posicao, "recebimentos": recebimentos})
+
+        return CobrancaDTO.devido_to_dict(conta, data, linhas)
+
+    def _data_da_consulta(self, data_texto: str) -> date:
+        if data_texto is None:
+            return today_in_sao_paulo()
+
+        return self._parse_date_or_raise("data", data_texto)
+
+    def _check_data_depois_dos_pagamentos(self, data: date, pagamentos: list) -> None:
+        ultimo_pagamento = data_do_ultimo_pagamento(pagamentos)
+
+        if ultimo_pagamento is not None and data < ultimo_pagamento:
+            raise InvalidPagoEm("data", data.isoformat())

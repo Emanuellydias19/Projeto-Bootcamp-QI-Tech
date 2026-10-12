@@ -54,6 +54,7 @@ def calcular_posicao(cobranca: Cobranca, conta: Conta, pagamentos: list, data: d
         "status": _status(valor_pago_total, total_devido),
         "itens": itens,
         "total_em_aberto_centavos": total_em_aberto,
+        "total_pago_centavos": valor_pago_total,
         "data": data,
         "multa_centavos": multa,
         "juros_centavos": juros,
