@@ -5,4 +5,5 @@ from repositories.politica_imputacao_repository import PoliticaImputacaoReposito
 from repositories.conta_repository import ContaRepository
 from repositories.cobranca_repository import CobrancaRepository
 from repositories.transacao_repository import TransacaoRepository
+from repositories.recebimento_repository import RecebimentoRepository
 from repositories.lancamento_repository import LancamentoRepository

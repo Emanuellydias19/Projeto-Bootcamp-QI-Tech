@@ -17,7 +17,13 @@ from errors import (
     ValorNotAboveTaxa,
 )
 from models import Conta, Lancamento, Transacao
-from repositories import CobrancaRepository, ContaRepository, LancamentoRepository, TransacaoRepository
+from repositories import (
+    CobrancaRepository,
+    ContaRepository,
+    LancamentoRepository,
+    RecebimentoRepository,
+    TransacaoRepository,
+)
 from utils.dates import today_in_sao_paulo
 from utils.idempotency import hash_requisicao
 from utils.imputacao import imputar
@@ -34,6 +40,7 @@ class TransacaoController(BaseController):
         self.cobranca_repository = CobrancaRepository(self.context)
         self.conta_repository = ContaRepository(self.context)
         self.transacao_repository = TransacaoRepository(self.context)
+        self.recebimento_repository = RecebimentoRepository(self.context)
         self.lancamento_repository = LancamentoRepository(self.context)
 
     def receber(self, cobranca_chave: str, recebimento_data: dict, chave_idempotencia: str) -> tuple:
@@ -64,9 +71,10 @@ class TransacaoController(BaseController):
         imputacao = imputar(valor, conta.politica.ordem_naturezas, posicao)
         self._check_teto_dos_saldos(conta, imputacao["rateio"])
 
-        transacao = self.transacao_repository.create_recebimento(
-            conta, cobranca, chave_idempotencia, hash_da_requisicao, pago_em
+        transacao = self.transacao_repository.create(
+            conta, Transacao.TIPO_RECEBIMENTO, chave_idempotencia, hash_da_requisicao
         )
+        self.recebimento_repository.create(transacao, cobranca, valor, pago_em)
         self._lancar(transacao, conta, imputacao["rateio"])
 
         resultado = TransacaoDTO.recebimento_to_dict(transacao, imputacao)
@@ -167,9 +175,10 @@ class TransacaoController(BaseController):
             raise TransacaoNotEstornavel()
 
         if transacao_estornada.tipo == Transacao.TIPO_RECEBIMENTO:
-            ultimo_recebimento = self.transacao_repository.get_ultimo_recebimento(transacao_estornada.cobranca_id)
+            recebimento = self.recebimento_repository.get_by_transacao(transacao_estornada)
+            ultimo_recebimento = self.recebimento_repository.get_ultimo_da_cobranca(recebimento.cobranca_id)
 
-            if ultimo_recebimento.id != transacao_estornada.id:
+            if ultimo_recebimento.id != recebimento.id:
                 raise NotLastRecebimento()
 
         parcelas = []
