@@ -39,7 +39,8 @@
       "72d13d6fba484650b04ed",
       "6e973da7670c429dbc2f5",
       "7c6cede030904fc982dfd",
-      "19e0b2ca64c143a38689a"
+      "19e0b2ca64c143a38689a",
+      "c1835d5fff9349149d809"
     ],
     "relationshipIds": [
       "d98ae0648617436d92c8a",
@@ -50,8 +51,9 @@
       "8c82c27274a74e93b461e",
       "69b5a8809e0e4ee0b47bc",
       "fd4128bec5984686bf271",
-      "0c7b421cdc01a37237148",
-      "b65018d1dbbf33b1de161"
+      "b65018d1dbbf33b1de161",
+      "8a2c88ffda4449708330f",
+      "e8fbbc70a5f24e268e65e"
     ],
     "indexIds": [
       "1e4f3b2799874d32bc22c",
@@ -246,11 +248,9 @@
           "368d07a1b526441ea8a72",
           "019db4e0e5e54a12895fc",
           "05c7aed511d240aea6e94",
-          "a79d76dd8b5c4aa6bcd9c",
           "148098026423493080e0d",
           "5bc1d051b40b468e89b5d",
           "28cff2a192984a59bb96f",
-          "64fba12bcebc4c39ab771",
           "3c393d70f7f949b8b0d3d"
         ],
         "seqColumnIds": [
@@ -259,11 +259,9 @@
           "368d07a1b526441ea8a72",
           "019db4e0e5e54a12895fc",
           "05c7aed511d240aea6e94",
-          "a79d76dd8b5c4aa6bcd9c",
           "148098026423493080e0d",
           "5bc1d051b40b468e89b5d",
           "28cff2a192984a59bb96f",
-          "64fba12bcebc4c39ab771",
           "3c393d70f7f949b8b0d3d"
         ],
         "ui": {
@@ -275,7 +273,7 @@
           "color": "#10B981"
         },
         "meta": {
-          "updateAt": 1790611942098,
+          "updateAt": 1791761631608,
           "createAt": 1790202745371
         }
       },
@@ -314,6 +312,43 @@
         "meta": {
           "updateAt": 1790202745371,
           "createAt": 1790202745371
+        }
+      },
+      "c1835d5fff9349149d809": {
+        "id": "c1835d5fff9349149d809",
+        "name": "recebimento",
+        "comment": "O registro de um pagamento do inquilino (DD41)",
+        "columnIds": [
+          "658c619ec8d44adfbd0e4",
+          "6a9c355444934dbfa7598",
+          "753108a8504b4901815e8",
+          "07b950cb199f438b96c27",
+          "f253de1d240f48d89f79f",
+          "f8538a4b0d514d97a17eb",
+          "f2b7ea625688421aa5efa",
+          "cd9b820ce9b946a8aaa93"
+        ],
+        "seqColumnIds": [
+          "658c619ec8d44adfbd0e4",
+          "6a9c355444934dbfa7598",
+          "753108a8504b4901815e8",
+          "07b950cb199f438b96c27",
+          "f253de1d240f48d89f79f",
+          "f8538a4b0d514d97a17eb",
+          "f2b7ea625688421aa5efa",
+          "cd9b820ce9b946a8aaa93"
+        ],
+        "ui": {
+          "x": 1900,
+          "y": 480,
+          "zIndex": 2,
+          "widthName": 74,
+          "widthComment": 312,
+          "color": "#10B981"
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
         }
       }
     },
@@ -1278,26 +1313,6 @@
           "createAt": 1790213257501
         }
       },
-      "a79d76dd8b5c4aa6bcd9c": {
-        "id": "a79d76dd8b5c4aa6bcd9c",
-        "tableId": "7c6cede030904fc982dfd",
-        "name": "cobranca_id",
-        "comment": "FK cobranca; a cobrança que o recebimento pagou, só no recebimento (T29)",
-        "dataType": "BIGINT",
-        "default": "",
-        "options": 0,
-        "ui": {
-          "keys": 2,
-          "widthName": 65,
-          "widthComment": 406,
-          "widthDataType": 60,
-          "widthDefault": 60
-        },
-        "meta": {
-          "updateAt": 1790253684638,
-          "createAt": 1790253684638
-        }
-      },
       "b3a4904451a85241a0f23": {
         "id": "b3a4904451a85241a0f23",
         "tableId": "90830de3bbe744488869b",
@@ -1338,24 +1353,164 @@
           "createAt": 1790611942098
         }
       },
-      "64fba12bcebc4c39ab771": {
-        "id": "64fba12bcebc4c39ab771",
-        "tableId": "7c6cede030904fc982dfd",
-        "name": "pago_em",
-        "comment": "data efetiva do pagamento, só no recebimento (DD19)",
-        "dataType": "DATE",
+      "658c619ec8d44adfbd0e4": {
+        "id": "658c619ec8d44adfbd0e4",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "id",
+        "comment": "PK interna; o identificador próprio do recebimento",
+        "dataType": "BIGSERIAL",
         "default": "",
-        "options": 0,
+        "options": 11,
+        "ui": {
+          "keys": 1,
+          "widthName": 60,
+          "widthComment": 340,
+          "widthDataType": 61,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "6a9c355444934dbfa7598": {
+        "id": "6a9c355444934dbfa7598",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "chave",
+        "comment": "identificador público",
+        "dataType": "CHAR(36)",
+        "default": "",
+        "options": 12,
         "ui": {
           "keys": 0,
           "widthName": 60,
+          "widthComment": 142,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "753108a8504b4901815e8": {
+        "id": "753108a8504b4901815e8",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "transacao_id",
+        "comment": "FK transacao; UNIQUE: um recebimento por transação (DD41)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 12,
+        "ui": {
+          "keys": 2,
+          "widthName": 81,
+          "widthComment": 387,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "07b950cb199f438b96c27": {
+        "id": "07b950cb199f438b96c27",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "transacao_tipo",
+        "comment": "sempre recebimento; com o transacao_id forma a FK (id, tipo)",
+        "dataType": "TEXT",
+        "default": "'recebimento'",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 95,
+          "widthComment": 408,
+          "widthDataType": 60,
+          "widthDefault": 88
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "f253de1d240f48d89f79f": {
+        "id": "f253de1d240f48d89f79f",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "cobranca_id",
+        "comment": "FK cobranca; a cobrança que o recebimento paga (T29)",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 2,
+          "widthName": 74,
+          "widthComment": 353,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "f8538a4b0d514d97a17eb": {
+        "id": "f8538a4b0d514d97a17eb",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "valor_centavos",
+        "comment": "o valor recebido; de 1 a 9007199254740991",
+        "dataType": "BIGINT",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 95,
           "widthComment": 278,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790611942098,
-          "createAt": 1790611942098
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "f2b7ea625688421aa5efa": {
+        "id": "f2b7ea625688421aa5efa",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "pago_em",
+        "comment": "data efetiva do pagamento (DD19)",
+        "dataType": "DATE",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 217,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "cd9b820ce9b946a8aaa93": {
+        "id": "cd9b820ce9b946a8aaa93",
+        "tableId": "c1835d5fff9349149d809",
+        "name": "criado_em",
+        "comment": "data e hora do registro",
+        "dataType": "TIMESTAMPTZ",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 61,
+          "widthComment": 156,
+          "widthDataType": 74,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
         }
       }
     },
@@ -1584,34 +1739,6 @@
           "createAt": 1790213257501
         }
       },
-      "0c7b421cdc01a37237148": {
-        "id": "0c7b421cdc01a37237148",
-        "identification": false,
-        "relationshipType": 4,
-        "startRelationshipType": 1,
-        "start": {
-          "tableId": "72d13d6fba484650b04ed",
-          "columnIds": [
-            "aebc71c74a754e8797ca0"
-          ],
-          "x": 1005.5,
-          "y": 760,
-          "direction": 8
-        },
-        "end": {
-          "tableId": "7c6cede030904fc982dfd",
-          "columnIds": [
-            "a79d76dd8b5c4aa6bcd9c"
-          ],
-          "x": 1180,
-          "y": 243,
-          "direction": 4
-        },
-        "meta": {
-          "updateAt": 1790253684638,
-          "createAt": 1790253684638
-        }
-      },
       "b65018d1dbbf33b1de161": {
         "id": "b65018d1dbbf33b1de161",
         "identification": false,
@@ -1638,6 +1765,62 @@
         "meta": {
           "updateAt": 1790253684638,
           "createAt": 1790253684638
+        }
+      },
+      "8a2c88ffda4449708330f": {
+        "id": "8a2c88ffda4449708330f",
+        "identification": false,
+        "relationshipType": 2,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "7c6cede030904fc982dfd",
+          "columnIds": [
+            "541320e1078145cf97a26"
+          ],
+          "x": 1880,
+          "y": 520,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "c1835d5fff9349149d809",
+          "columnIds": [
+            "753108a8504b4901815e8"
+          ],
+          "x": 1900,
+          "y": 560,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
+        }
+      },
+      "e8fbbc70a5f24e268e65e": {
+        "id": "e8fbbc70a5f24e268e65e",
+        "identification": false,
+        "relationshipType": 16,
+        "startRelationshipType": 2,
+        "start": {
+          "tableId": "72d13d6fba484650b04ed",
+          "columnIds": [
+            "aebc71c74a754e8797ca0"
+          ],
+          "x": 1700,
+          "y": 120,
+          "direction": 2
+        },
+        "end": {
+          "tableId": "c1835d5fff9349149d809",
+          "columnIds": [
+            "f253de1d240f48d89f79f"
+          ],
+          "x": 1900,
+          "y": 600,
+          "direction": 1
+        },
+        "meta": {
+          "updateAt": 1791761631608,
+          "createAt": 1791761631608
         }
       }
     },
@@ -1800,7 +1983,7 @@
     "memoEntities": {
       "7bcc1af076c949bd8d08f": {
         "id": "7bcc1af076c949bd8d08f",
-        "value": "Modelo do RFC v1 + decisões do time (23, 24 e 28/09/2026).\nFonte: docs/rfc/RFC.md, seção 12.\n\nSaldos (T13 e T39): condomínio e IPTU contam no reservado; aluguel, multa, juros, despesa_extra, taxa e repasse no disponível.\nEm aberto numa cobrança = devido do item - SUM(lançamentos que apontam para ele).\nRecebimento aponta para a cobrança que pagou (T29): é assim que se sabe se a multa já foi cobrada (RN14).\nEstorno: UNIQUE em transacao_estornada_id, uma transação é estornada no máximo uma vez (DD04).\nPolítica padrão v1 criada no database.sql, com chave fixa (T41); ordem: juros, multa, condominio, iptu, aluguel, despesa_extra (DD24).\nChave pública em CHAR(36), com UUID gerado na aplicação (DD13).\nIdempotência: chave_idempotencia + hash_requisicao (DD18). pago_em é a data efetiva do pagamento (DD19).\nStatus da cobrança calculado, sem coluna: aberta, parcial ou quitada (DD23).\n\nItem incluído depois do vencimento: encargos a partir da inclusão, sem retroativo (T42).\nMulta e juros não cobertos continuam devidos; quitada só sem nada devido (T43).\n\nNenhuma decisão em aberto.",
+        "value": "Modelo do RFC v1 + decisões do time (23, 24 e 28/09/2026).\nFonte: docs/rfc/RFC.md, seção 12.\n\nSaldos (T13 e T39): condomínio e IPTU contam no reservado; aluguel, multa, juros, despesa_extra, taxa e repasse no disponível.\nEm aberto numa cobrança = devido do item - SUM(lançamentos que apontam para ele).\nRecebimento tem tabela própria desde 11/10/2026 (DD41) e aponta para a cobrança que pagou (T29): é assim que se sabe se a multa já foi cobrada (RN14).\nEstorno: UNIQUE em transacao_estornada_id, uma transação é estornada no máximo uma vez (DD04).\nPolítica padrão v1 criada no database.sql, com chave fixa (T41); ordem: juros, multa, condominio, iptu, aluguel, despesa_extra (DD24).\nChave pública em CHAR(36), com UUID gerado na aplicação (DD13).\nIdempotência: chave_idempotencia + hash_requisicao (DD18). pago_em é a data efetiva do pagamento (DD19).\nStatus da cobrança calculado, sem coluna: aberta, parcial ou quitada (DD23).\n\nItem incluído depois do vencimento: encargos a partir da inclusão, sem retroativo (T42).\nMulta e juros não cobertos continuam devidos; quitada só sem nada devido (T43).\n\nNenhuma decisão em aberto.",
         "ui": {
           "x": 60,
           "y": 40,
@@ -1810,7 +1993,7 @@
           "color": ""
         },
         "meta": {
-          "updateAt": 1790615184434,
+          "updateAt": 1791761631608,
           "createAt": 1790202745371
         }
       }

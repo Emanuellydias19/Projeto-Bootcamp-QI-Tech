@@ -152,7 +152,8 @@ Antes de definir as rotas, precisamos definir os conceitos que existem no sistem
 | Conta | A posição do proprietário para um imóvel dentro do caixa da administradora | chave pública, proprietário, imóvel, saldo disponível, saldo reservado, taxa de administração, multa e juros (em bps), política de imputação |
 | Cobrança | O que o inquilino deve numa competência (Time, T14 e T25) | chave pública, conta, competência (única por conta), vencimento |
 | Item da cobrança | Quanto é devido de uma natureza naquela competência (Time, T14 e T25) | cobrança, natureza, valor devido |
-| Transação | Um movimento de dinheiro: recebimento, encargo, repasse ou estorno | chave pública, conta, tipo, chave de idempotência, hash da requisição (DD18), resultado guardado, cobrança paga e data do pagamento (só no recebimento, DD19), transação estornada (só no estorno) |
+| Transação | Um movimento de dinheiro: recebimento, encargo, repasse ou estorno | chave pública, conta, tipo, chave de idempotência, hash da requisição (DD18), resultado guardado, transação estornada (só no estorno) |
+| Recebimento | O registro de um pagamento do inquilino sobre uma cobrança; existe um para cada transação do tipo `recebimento` (DD41) | chave pública, transação (uma para uma), cobrança paga, valor recebido, data do pagamento (DD19), data e hora do registro |
 | Lançamento | Uma parte da transação, com uma única natureza (aluguel, condomínio, IPTU, despesa extra, multa, juros, taxa, repasse) | chave pública, transação, conta, natureza, valor em centavos (sinalizado, nunca alterado), item da cobrança que quitou (quando houver) |
 | Política de imputação | A ordem em que um valor recebido quita as naturezas | chave pública, nome, versão (nunca editada no lugar), ordem das naturezas, vigente desde |
 | Transferência | Não é uma entidade própria na ORCA: o repasse é uma **Transação** do tipo `repasse` | ver Transação |
@@ -189,6 +190,9 @@ Proprietário
                    │              └── tem ──> Itens (aluguel, condomínio, IPTU, despesa extra)
                    │
                    └── movimenta ──> Transação (recebimento, encargo, repasse, estorno)
+                                        │
+                                        ├── registra ──> Recebimento (só na transação de recebimento;
+                                        │                aponta para a Cobrança que pagou, DD41)
                                         │
                                         └── compõe ──> Lançamentos (cada um com uma natureza)
 ```
@@ -760,7 +764,7 @@ Antes de implementar cada endpoint, responder:
 | Campo | Tipo | Obrigatório | Descrição |
 | --- | --- | --- | --- |
 | `valor_centavos` | inteiro | sim | quanto o inquilino pagou; maior que zero e até o devido na data do pagamento (aberto + multa + juros, T35) |
-| `pago_em` | data | sim | quando o inquilino pagou; base da multa e dos juros; guardado em `transacao.pago_em`, separado do `criado_em` (DD19) |
+| `pago_em` | data | sim | quando o inquilino pagou; base da multa e dos juros; guardado em `recebimento.pago_em`, separado do `criado_em` (DD19 e DD41) |
 
 Exemplo: o inquilino pagou R$ 1.800,00 em dia, abaixo dos R$ 2.000,00 devidos na cobrança de outubro.
 
@@ -1459,7 +1463,7 @@ Operador ──> POST /cobrancas/{chave}/recebimentos
     ↓
 9. imputa o valor pela política vigente: juros, multa, condomínio, IPTU, aluguel, despesa extra (DD24)
     ↓
-10. INSERT transacao (chave_idempotencia UNIQUE por conta, hash_requisicao, pago_em, cobranca_id) e INSERT lancamentos (juros, multa e um por item que recebeu valor, DD32)
+10. INSERT transacao (chave_idempotencia UNIQUE por conta, hash_requisicao), INSERT recebimento (transação, cobrança, valor_centavos e pago_em, DD41) e INSERT lancamentos (juros, multa e um por item que recebeu valor, DD32)
     ↓
 11. UPDATE saldo_disponivel e saldo_reservado
     ↓
@@ -1755,15 +1759,13 @@ Transacao
 - conta_id            bigint       FK para Conta
 - tipo                text         recebimento, encargo, repasse ou estorno (T22)
 - transacao_estornada_id  bigint  FK para Transacao; preenchida só no estorno; UNIQUE, então uma transação é estornada no máximo uma vez (DD04)
-- cobranca_id         bigint       FK para Cobranca; a cobrança que o recebimento pagou, preenchida só no recebimento (T29)
 - chave_idempotencia  text         UNIQUE por conta; barra o reenvio
 - hash_requisicao     char(64)     SHA-256 da rota, da chave do caminho e do corpo; separa a repetição idêntica da chave reutilizada (DD18)
 - resultado           jsonb        resposta guardada para a repetição idêntica
-- pago_em             date         data efetiva do pagamento; obrigatória no recebimento e vazia nos outros tipos (DD19)
 - criado_em           timestamptz  quando foi registrada
 ```
 
-O `cobranca_id` liga o recebimento inteiro à cobrança, inclusive os lançamentos de multa e juros, que não quitam nenhum item e por isso não têm `item_cobranca_id`. É por ele que a API sabe se a multa daquela cobrança já foi cobrada (RN14).
+O par `(id, tipo)` é UNIQUE: é o alvo da chave estrangeira do recebimento, que só aceita uma transação do tipo `recebimento` (12.8). A cobrança paga e a data do pagamento, que antes ficavam aqui, passaram para a tabela `recebimento` (DD41).
 
 ## 12.4 Transferência
 
@@ -1832,6 +1834,32 @@ Item_cobranca
 - criado_em              timestamptz
 ```
 
+## 12.8 Recebimento
+
+```text
+Recebimento
+- id              bigserial    PK interna; o identificador próprio do recebimento
+- chave           char(36)     UNIQUE, identificador público
+- transacao_id    bigint       FK para Transacao; UNIQUE, então uma transação tem no máximo um recebimento
+- transacao_tipo  text         sempre 'recebimento' (CHECK); com o transacao_id, forma a FK para Transacao(id, tipo)
+- cobranca_id     bigint       FK para Cobranca; a cobrança que o recebimento paga (T29)
+- valor_centavos  bigint       o valor informado no pedido; entre 1 e 9007199254740991 (CHECK)
+- pago_em         date         data efetiva do pagamento (DD19)
+- criado_em       timestamptz  data e hora do registro; igual ao criado_em da transação
+```
+
+O recebimento é o registro de um pagamento do inquilino. Ele mantém a identidade da transação: nasce junto com ela, na mesma gravação, e é a transação que carrega a chave de idempotência, o resultado guardado e os lançamentos. A API continua identificando a operação pela `transacao_chave`, que é a devolvida no 201 e a usada no estorno.
+
+O `cobranca_id` liga o recebimento inteiro à cobrança, inclusive os lançamentos de multa e juros, que não quitam nenhum item e por isso não têm `item_cobranca_id`. É por ele que a API sabe se a multa daquela cobrança já foi cobrada (RN14).
+
+**O que não é coluna, de propósito:** se o recebimento é parcial ou completo sai do status calculado da cobrança (DD23); se foi estornado sai da existência de uma transação de estorno que aponta para a transação dele (DD04). Guardar essas situações obrigaria a alterar a linha depois, contra a T10.
+
+**O que o banco garante:** toda linha de recebimento aponta para uma transação que existe e é do tipo `recebimento`, tem cobrança, valor maior que zero e data; e uma transação tem no máximo um recebimento.
+
+**O que só o código garante:** que toda transação do tipo `recebimento` tenha a sua linha em `recebimento`, e que o `valor_centavos` seja igual à soma dos lançamentos da transação (RN16). As duas coisas valem porque a transação, o recebimento, os lançamentos e os saldos são gravados juntos, no mesmo commit, depois de todas as regras (DD17). Antes da DD41, duas restrições CHECK na transação garantiam no banco que todo recebimento tinha cobrança e data; essa garantia nos dois sentidos pediria agora um gatilho de restrição, que ficou fora da Fase 1.
+
+**Por que o recebimento tem tabela e o repasse não (12.4):** o recebimento tem dados que são só dele (a cobrança paga, a data efetiva do pagamento e o valor informado); o repasse e o pagamento de encargo não têm nenhum dado próprio além dos lançamentos.
+
 ---
 
 ## 13. Decisões em aberto
@@ -1842,7 +1870,7 @@ Tudo que ainda não foi decidido deve ficar explícito.
 | --- | --- | --- | --- |
 | | Nenhuma decisão em aberto. | | |
 
-As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. As DD31 a DD36 e as DD38 a DD40 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
+As questões D01 a D28 estão fechadas (seção 14). Os detalhes derivados DD01 a DD10 aguardam a revisão do time. Os DD11 a DD30 foram aprovados pelo time em 28/09/2026, menos os complementos marcados como *derivado, aguarda revisão*. A DD41 é decisão de 11/10/2026. As DD31 a DD36 e as DD38 a DD40 foram derivadas na implementação e também aguardam revisão, menos a DD35 (a) e a compensação da DD26, aprovadas pelo time em 28/09/2026. A DD37 reúne decisões do time de 29/09/2026 (fim da seção 14).
 
 > **Regra:** uma decisão em aberto não deve ser escondida dentro do código.
 
@@ -1884,7 +1912,7 @@ Os IDs começam com **T**. Entre parênteses, o ID da questão em aberto que a d
 | T26 (D20) | Política de retry do conector **fora da Fase 1**: nenhuma chamada ao conector é reenviada automaticamente | Já está no quadro do que a ORCA não resolve agora, e não disputa saldo | 23/09/2026 |
 | T27 | A taxa de administração incide **só sobre o aluguel**, e não sobre multa e juros | Descartado: incidir sobre todo o valor repassado, que seria mais simples, mas faria a administradora ganhar também sobre multa e juros. Mantém o que o RFC já dizia ("sobre o aluguel efetivamente quitado") | 23/09/2026 |
 | T28 | **Rotas organizadas pelo recurso dono:** o que pertence à conta fica em `/contas/{chave}/...` (cobranças, pagamento de encargo e repasse), e o que pertence à cobrança fica em `/cobrancas/{chave}/...` (itens e recebimentos); o recebimento passa a ser `POST /cobrancas/{chave}/recebimentos`, sem `conta_chave` nem `competencia` no corpo; e entra a rota `GET /cobrancas/{chave}`, com o devido, o pago e o aberto de cada item | Descartado: as rotas soltas do RFC, com a `conta_chave` no corpo, porque misturavam dois padrões (leituras dentro da conta, escritas fora dela), e o operador não tinha como consultar o que está em aberto antes de um recebimento que responde 422 acima dele. Com a chave no caminho, o "404 conta inexistente" fica igual em todas as rotas, e a verificação de acesso (T33) acontece num lugar só | 24/09/2026 |
-| T29 | A **transação de recebimento aponta para a cobrança** que pagou (`transacao.cobranca_id`, preenchida só no recebimento) | Descartado: chegar à cobrança só pelos lançamentos (`item_cobranca_id`), porque os lançamentos de multa e juros não quitam item e ficariam sem ligação com a cobrança; sem ela, a API não teria como saber se a multa daquela cobrança já foi cobrada (RN14: um segundo pagamento não gera multa nova) | 24/09/2026 |
+| T29 | A **transação de recebimento aponta para a cobrança** que pagou (`transacao.cobranca_id`, preenchida só no recebimento). *Revista pela DD41 em 11/10/2026: a ligação continua existindo, agora em `recebimento.cobranca_id`* | Descartado: chegar à cobrança só pelos lançamentos (`item_cobranca_id`), porque os lançamentos de multa e juros não quitam item e ficariam sem ligação com a cobrança; sem ela, a API não teria como saber se a multa daquela cobrança já foi cobrada (RN14: um segundo pagamento não gera multa nova) | 24/09/2026 |
 | T30 (D09) | Cada conta tem uma **política de imputação associada** por `politica_id`, que decide a ordem e as regras da distribuição dos recebimentos; a abertura de conta referencia a política aplicável | Mantém a política explícita no modelo e permite políticas diferentes no futuro sem mudar a estrutura da conta | 24/09/2026 |
 | T31 (D10) | **Catálogo único de erros no padrão `QIT` da base**: cada erro com código, mensagem e status HTTP (seção 7.1) | Evita que cada rota invente a própria representação de erro; o cliente programa em cima do código | 24/09/2026 |
 | T32 (D11) | **Contrato das respostas pelo padrão da base**: extrato paginado com **limite máximo de 50** lançamentos por página; `Idempotency-Key` ausente é erro de requisição, pelo padrão de validação da base; os campos das respostas são definidos explicitamente no contrato, e não como proposta | Segue a validação que a base já adota | 24/09/2026 |
@@ -1926,7 +1954,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD16 | **A trava da conta é a primeira leitura dela na transação** (`SELECT ... FOR UPDATE`); cada operação trava uma conta só, e toda regra que depende do saldo é conferida depois da trava | T02; 3.3 (o repasse não tem conta de destino); na base, um objeto lido antes da trava volta com o valor antigo |
 | DD17 | **As quatro operações que movem dinheiro** (recebimento, pagamento de encargo, repasse e estorno) ficam no `transacao_controller.py` e seguem o mesmo roteiro: conta travada, idempotência conferida com a conta travada, regras de negócio, lançamentos e saldos, e o commit como última operação. Nenhuma escrita acontece antes das regras, e qualquer falha desfaz tudo | T22, T24 e T37 (toda operação de dinheiro é uma transação); T34; a idempotência vem depois da trava para que uma repetição concorrente espere a primeira e receba o resultado dela (DD29) |
 | DD18 | **Idempotência com o hash da requisição:** `transacao.hash_requisicao` (`CHAR(64)`) guarda o SHA-256 da rota, da chave do caminho e do corpo em JSON canônico. Mesma chave com hash igual devolve o resultado guardado (200); com hash diferente, 409 (`QIT001022`). Uma operação que falha é desfeita inteira, inclusive a linha de idempotência, e um reenvio com a mesma chave executa de novo | T03 e 8.4 (comparar a requisição); a rota e a chave do caminho entram no hash porque o estorno não tem corpo e a mesma chave, na mesma conta, pode chegar por outra rota; atomicidade (3.3 e 8.3) |
-| DD19 | **`transacao.pago_em` (`DATE`)**: a data efetiva do pagamento, separada do `criado_em`, que é a data do registro; obrigatória no recebimento e vazia nos outros tipos | T18 e RN14: os juros dependem da data de cada pagamento |
+| DD19 | **`transacao.pago_em` (`DATE`)**: a data efetiva do pagamento, separada do `criado_em`, que é a data do registro; obrigatória no recebimento e vazia nos outros tipos. *Revista pela DD41 em 11/10/2026: a coluna passou para `recebimento.pago_em`, obrigatória em toda linha* | T18 e RN14: os juros dependem da data de cada pagamento |
 | DD20 | **Fórmula da multa e dos juros.** A multa é o percentual `multa_bps` sobre o valor em aberto dos itens no vencimento, uma vez só. Os juros correm por dias corridos, com divisor de 30 dias, a partir da data mais recente entre o vencimento (ou a inclusão do item, T42) e o `pago_em` do último recebimento não estornado da cobrança, até o `pago_em` (na consulta da cobrança, até a `data`), sobre o valor em aberto dos itens (12.7), sem juros sobre juros nem sobre a multa. O arredondamento trunca uma vez. Exemplo: R$ 2.000,00 pagos 10 dias depois do vencimento, com multa de 2% e juros de 1% ao mês: multa `⌊200000 × 200 ÷ 10000⌋` = 4000 (R$ 40,00); juros `⌊200000 × 100 × 10 ÷ (10000 × 30)⌋` = 666 (R$ 6,66). Para um item incluído depois do vencimento, a data de referência dos encargos é a da inclusão (T42). A multa e os juros que um recebimento não cobre continuam devidos (T43) | T18, T35, T42, T43 e T17 (truncar para baixo) |
 | DD21 | **`pago_em` no futuro, ou anterior a um recebimento não estornado já registrado na cobrança, responde 422** (`QIT001027`). *Derivado, aguarda revisão:* na consulta da cobrança, uma `data` anterior a esse recebimento responde o mesmo 422, e uma `data` no futuro é aceita, para o operador simular o devido | DD20: os juros por período dependem da ordem das datas |
 | DD22 | **"Hoje" é a data de São Paulo** (`America/Sao_Paulo`): vale para o `GET /cobrancas/{chave}` sem `data` e para a checagem de `pago_em` no futuro | DD05; o servidor roda em UTC e viraria o dia às 21h |
@@ -1948,6 +1976,7 @@ Os itens DD11 a DD30 são decisões de escopo (DD11), de modelo (DD13, DD18 e DD
 | DD38 | *Derivado, aguarda revisão:* **endurecimento das entradas e dos erros.** (a) Um corpo que o leitor de JSON do FastAPI não consegue decodificar (bytes inválidos na codificação detectada, inteiro com mais de 4300 dígitos, JSON aninhado demais) responde 400 (`QIT000001`), e não 500. O leitor detecta sozinho UTF-8, UTF-16 e UTF-32, então um corpo válido nessas codificações é lido normalmente. (b) Espaços e tabulações nas pontas da `Idempotency-Key` não fazem parte dela (HTTP, RFC 9110), para que um reenvio com um espaço a mais não movimente o dinheiro de novo; os 255 caracteres são contados depois disso. (c) `OPTIONS` também exige o `INTERNAL-TOKEN`, para que quem não tem o token não descubra as rotas pela diferença entre 404 e 405. (d) A resposta 500 também traz o `X-Request-ID`, e o log registra o erro com o traceback. Nenhuma entrada das rotas da ORCA produz mais um 500. A rota de exemplo da base, mantida como está (`GET /sample_entities` com um NUL no filtro `name`), ainda responde 500, e o teste HTTP usa esse caso para provar o header. (e) O engine do SQLAlchemy usa `hide_parameters`, para que o log de um erro de banco não grave os valores enviados. (f) O índice `ix_lancamento_conta_id` passa a ser `(conta_id, id)`, a ordem do extrato | RFC 7.1 (X-Request-ID e QIT000001), RFC 9110, DD18, DD36 |
 | DD39 | *Derivado, aguarda revisão:* **produção (Aula 4).** (a) O log sai em JSON, uma linha por evento em stdout, com `request_id`, `method`, `path`, `status` e `duration_ms` como campos; a linha de acesso do uvicorn, que repetia a de saída sem o `request_id`, foi desligada, e as outras linhas do uvicorn passam pelo mesmo formato. (b) `GET /metrics` expõe as métricas RED (`orca_http_requests_total` e `orca_http_request_duration_seconds`), rotuladas pelo molde da rota e nunca pela chave, com os métodos incomuns juntos em `OUTRO`, e exige o `INTERNAL-TOKEN`. (c) `GET /health_check/ready` responde se a API está pronta para tráfego, com um `SELECT 1`; o `/health_check` continua sem tocar no banco, para que uma queda do banco não reinicie a API. A prontidão dispensa o token e é a que o healthcheck do compose usa. (d) Toda conexão com o banco tem `lock_timeout` de 5 s, `statement_timeout` de 15 s e `connect_timeout` de 3 s; estourou, ou o banco está fora do ar, a resposta é 503 (`QIT000503`) com `Retry-After: 1`, e a transação é desfeita. (e) O corpo tem até 65536 bytes (413, `QIT000413`) e precisa declarar o tamanho (411, `QIT000411`); a cobrança é criada com até 100 itens (400). (f) Fora dos ambientes `local` e `test`, a API não sobe com o `INTERNAL_TOKEN` padrão nem com um de menos de 32 caracteres (a regra nega por padrão), e o token é comparado em tempo constante. As respostas às 9 perguntas da Aula 4 estão em [producao.md](../producao.md) | Aula 4 (Produção), OWASP API Security Top 10 2023, DD16, DD18, DD38 |
 | DD40 | *Derivado, aguarda revisão:* **item enviado na criação e item incluído depois.** A API separa os dois pelo `criado_em`: os itens enviados na criação nascem na mesma transação da cobrança e têm exatamente o mesmo `criado_em` dela; qualquer item com outro `criado_em` foi incluído depois (7.2.9) e segue a T42 e a DD31. A comparação é por igualdade, e não pela ordem dos dois horários, porque o relógio do banco pode recuar num ajuste de hora: com a comparação pela ordem, um item incluído logo depois de um recuo era tratado como item da criação, ganhava multa e juros retroativos e entrava num recebimento com data anterior à inclusão. O defeito apareceu numa rodada da suíte em que o relógio do Docker recuou 0,41 s; dois testes simulam o recuo adiantando o `criado_em` da cobrança direto no banco e conferem o resultado por HTTP | T42, DD22, DD31 |
+| DD41 | **Tabela `recebimento` (decisão de 11/10/2026).** Cada pagamento do inquilino passa a ter uma linha própria na tabela `recebimento`, ligada uma para uma à sua transação, com identificador próprio (`id` e `chave`), a cobrança paga, o valor recebido, a data do pagamento e a data e hora do registro (12.8). As colunas `cobranca_id` e `pago_em` saem da transação, com as restrições `ck_transacao_cobranca` e `ck_transacao_pago_em`; entra a chave estrangeira composta `(transacao_id, transacao_tipo)`, que só aceita uma transação do tipo `recebimento`. O contrato das rotas não muda: o recebimento continua respondendo `transacao_chave`, `rateio` e `em_aberto`, e o estorno continua pela chave da transação. A regra de que toda transação de recebimento tem a sua linha em `recebimento`, e de que o valor é igual à soma dos lançamentos, passa a ser garantida pelo código, na mesma gravação. **Descartado:** manter o recebimento só como linha de `transacao`, que atendia as regras mas não dava ao recebimento um registro próprio com o valor recebido. A T29 e a DD19 continuam valendo no conteúdo; muda a tabela onde os dados moram | T29, DD19, RN16, T10, DD17 |
 
 ---
 

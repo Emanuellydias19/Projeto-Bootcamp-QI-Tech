@@ -3,8 +3,8 @@
 | | |
 | --- | --- |
 | **Time** | Emanuelly Dias · Julia Perri · Maya Giron |
-| **Data** | 29/09/2026 |
-| **Versão** | 1 |
+| **Data** | 11/10/2026 |
+| **Versão** | 2 |
 
 O detalhe de cada decisão, com a alternativa descartada e o motivo, está no [documento de decisões](RFC.md).
 
@@ -71,7 +71,8 @@ erDiagram
     CONTA ||--o{ COBRANCA : "cobra"
     COBRANCA ||--|{ ITEM_COBRANCA : "tem"
     CONTA ||--o{ TRANSACAO : "movimenta"
-    COBRANCA ||--o{ TRANSACAO : "é paga por"
+    TRANSACAO ||--o| RECEBIMENTO : "registra"
+    COBRANCA ||--o{ RECEBIMENTO : "é paga por"
     TRANSACAO |o--o| TRANSACAO : "estorna"
     TRANSACAO ||--|{ LANCAMENTO : "compõe"
     CONTA ||--o{ LANCAMENTO : "explica o saldo"
@@ -123,10 +124,18 @@ erDiagram
         text chave_idempotencia UK "única por conta"
         char64 hash_requisicao "separa repetição de reutilização"
         jsonb resultado "resposta guardada para a repetição"
-        bigint cobranca_id FK "só no recebimento"
         bigint transacao_estornada_id FK "só no estorno, única"
-        date pago_em "data efetiva do pagamento"
         timestamptz criado_em
+    }
+    RECEBIMENTO {
+        bigint id PK "interno, nunca sai na resposta"
+        char36 chave UK
+        bigint transacao_id FK "única: um recebimento por transação"
+        text transacao_tipo "sempre recebimento; a FK só aceita esse tipo"
+        bigint cobranca_id FK "a cobrança paga"
+        bigint valor_centavos "o valor recebido, maior que zero"
+        date pago_em "data efetiva do pagamento"
+        timestamptz criado_em "data e hora do registro"
     }
     LANCAMENTO {
         bigint id PK "interno, nunca sai na resposta"
@@ -149,7 +158,7 @@ erDiagram
 3. Com a conta travada, procura a transação com a mesma chave na conta: não existe.
 4. Relê os itens da cobrança, confere o valor e o `pago_em` e calcula o devido na data: o aberto dos itens, a multa sobre o que estava em aberto no vencimento e os juros por dia, por trechos entre os pagamentos.
 5. Imputa o valor na ordem da política: juros, multa, condomínio, IPTU, aluguel, despesa extra.
-6. Grava a transação, um lançamento por parcela do rateio e os dois saldos (condomínio e IPTU no reservado, o resto no disponível), guarda a resposta e faz o COMMIT, que libera a trava.
+6. Grava a transação, o recebimento (com a cobrança, o valor e a data do pagamento), um lançamento por parcela do rateio e os dois saldos (condomínio e IPTU no reservado, o resto no disponível), guarda a resposta e faz o COMMIT, que libera a trava.
 7. Responde `201` com o rateio e o que ficou em aberto.
 
 #### Recebimento: falha, reenvio simultâneo depois de um timeout
